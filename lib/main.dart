@@ -4,6 +4,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:share_plus/share_plus.dart';
 import 'firebase_options.dart';
 
 void main() async {
@@ -243,7 +244,6 @@ class MatchDetailScreen extends StatelessWidget {
     );
   }
 
-  // ─── BATTING HEADER ───
   Widget _battingHeader() => Container(
         color: Colors.grey.shade100,
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -297,7 +297,6 @@ class MatchDetailScreen extends StatelessWidget {
         ),
       );
 
-  // ─── BATTING ROW ───
   Widget _batterRow(dynamic b) {
     Map data = b is Map ? b : {};
     return Padding(
@@ -325,7 +324,6 @@ class MatchDetailScreen extends StatelessWidget {
     );
   }
 
-  // ─── BOWLING HEADER ───
   Widget _bowlerHeader() => Container(
         color: Colors.grey.shade100,
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -367,7 +365,6 @@ class MatchDetailScreen extends StatelessWidget {
         ),
       );
 
-  // ─── BOWLING ROW ───
   Widget _bowlerRow(dynamic b) {
     Map data = b is Map ? b : {};
     return Padding(
@@ -515,6 +512,17 @@ class NewsDetailScreen extends StatelessWidget {
     return SizedBox();
   }
 
+  void _shareNews() {
+    String title = newsData['title'] ?? '';
+    String desc = newsData['desc'] ?? '';
+    String shareText = '$title\n\n$desc\n\nShared from Cric Mania app';
+
+    Share.share(
+      shareText,
+      subject: title,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -523,7 +531,14 @@ class NewsDetailScreen extends StatelessWidget {
           title: Text("News Detail",
               style:
                   TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-          iconTheme: IconThemeData(color: Colors.white)),
+          iconTheme: IconThemeData(color: Colors.white),
+          actions: [
+            IconButton(
+              icon: Icon(Icons.share, color: Colors.white),
+              onPressed: _shareNews,
+              tooltip: 'Share',
+            ),
+          ]),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -611,8 +626,11 @@ class _PremiumTabState extends State<PremiumTab> {
                               fontSize: 20,
                               fontWeight: FontWeight.bold)),
                       SizedBox(height: 8),
-                      Text("No ads and free fantasy league (coming soon)",
-                          style: TextStyle(color: Colors.white70, fontSize: 14)),
+                      Text("AD FREE",
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold)),
                       if (isPremiumActive && expiryDate != null)
                         Padding(
                             padding: EdgeInsets.only(top: 10),
