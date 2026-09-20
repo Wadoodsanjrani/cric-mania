@@ -159,10 +159,6 @@ class LiveScoreTab extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════
-//   MATCH DETAIL SCREEN — Only Scorecard
-// ═══════════════════════════════════════════
-
 class MatchDetailScreen extends StatelessWidget {
   final String matchId;
   MatchDetailScreen({required this.matchId});
@@ -244,6 +240,7 @@ class MatchDetailScreen extends StatelessWidget {
     );
   }
 
+  // ✅ BATTING HEADER — SR flex: 2
   Widget _battingHeader() => Container(
         color: Colors.grey.shade100,
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -288,6 +285,7 @@ class MatchDetailScreen extends StatelessWidget {
                         fontWeight: FontWeight.bold,
                         fontSize: 11))),
             Expanded(
+                flex: 2,
                 child: Text("SR",
                     style: TextStyle(
                         color: Colors.grey,
@@ -297,6 +295,7 @@ class MatchDetailScreen extends StatelessWidget {
         ),
       );
 
+  // ✅ BATTER ROW — SR flex: 2
   Widget _batterRow(dynamic b) {
     Map data = b is Map ? b : {};
     return Padding(
@@ -318,7 +317,9 @@ class MatchDetailScreen extends StatelessWidget {
           Expanded(child: Text("${data['b'] ?? 0}")),
           Expanded(child: Text("${data['4s'] ?? 0}")),
           Expanded(child: Text("${data['6s'] ?? 0}")),
-          Expanded(child: Text("${data['sr'] ?? 0}")),
+          Expanded(
+              flex: 2,
+              child: Text("${data['sr'] ?? 0}")),
         ],
       ),
     );
@@ -385,10 +386,6 @@ class MatchDetailScreen extends StatelessWidget {
     );
   }
 }
-
-// ═══════════════════════════════════════════
-//   NEWS TAB
-// ═══════════════════════════════════════════
 
 class NewsTab extends StatelessWidget {
   Widget _buildNewsImage(Map<String, dynamic> news) {
@@ -570,10 +567,6 @@ class NewsDetailScreen extends StatelessWidget {
     );
   }
 }
-
-// ═══════════════════════════════════════════
-//   PREMIUM TAB
-// ═══════════════════════════════════════════
 
 class PremiumTab extends StatefulWidget {
   @override
