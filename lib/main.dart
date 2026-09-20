@@ -240,86 +240,115 @@ class MatchDetailScreen extends StatelessWidget {
     );
   }
 
-  // ✅ BATTING HEADER — SR flex: 2
+  // ✅ BATTING HEADER — Status + center align
   Widget _battingHeader() => Container(
         color: Colors.grey.shade100,
-        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
         child: Row(
           children: [
             Expanded(
-                flex: 4,
+                flex: 3,
                 child: Text("Batter",
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 11))),
+                        fontSize: 10))),
             Expanded(
-                flex: 4,
-                child: Text("How Out",
+                flex: 3,
+                child: Text("Status",
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 11))),
+                        fontSize: 10))),
             Expanded(
+                flex: 1,
                 child: Text("R",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 11))),
+                        fontSize: 10))),
             Expanded(
+                flex: 1,
                 child: Text("B",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 11))),
+                        fontSize: 10))),
             Expanded(
+                flex: 1,
                 child: Text("4s",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 11))),
+                        fontSize: 10))),
             Expanded(
+                flex: 1,
                 child: Text("6s",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 11))),
+                        fontSize: 10))),
             Expanded(
                 flex: 2,
                 child: Text("SR",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 11))),
+                        fontSize: 10))),
           ],
         ),
       );
 
-  // ✅ BATTER ROW — SR flex: 2
+  // ✅ BATTER ROW — center align
   Widget _batterRow(dynamic b) {
     Map data = b is Map ? b : {};
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
       child: Row(
         children: [
           Expanded(
-              flex: 4,
+              flex: 3,
               child: Text("${data['name'] ?? ''}",
                   style: TextStyle(
-                      color: Color(0xFF0077B6), fontWeight: FontWeight.w500),
+                      color: Color(0xFF0077B6),
+                      fontWeight: FontWeight.w500,
+                      fontSize: 12),
                   overflow: TextOverflow.ellipsis)),
           Expanded(
-              flex: 4,
+              flex: 3,
               child: Text("${data['howOut'] ?? ''}",
-                  style: TextStyle(color: Colors.grey[700], fontSize: 11),
+                  style: TextStyle(color: Colors.grey[700], fontSize: 10),
                   overflow: TextOverflow.ellipsis)),
-          Expanded(child: Text("${data['r'] ?? 0}")),
-          Expanded(child: Text("${data['b'] ?? 0}")),
-          Expanded(child: Text("${data['4s'] ?? 0}")),
-          Expanded(child: Text("${data['6s'] ?? 0}")),
+          Expanded(
+              flex: 1,
+              child: Text("${data['r'] ?? 0}",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12))),
+          Expanded(
+              flex: 1,
+              child: Text("${data['b'] ?? 0}",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12))),
+          Expanded(
+              flex: 1,
+              child: Text("${data['4s'] ?? 0}",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12))),
+          Expanded(
+              flex: 1,
+              child: Text("${data['6s'] ?? 0}",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12))),
           Expanded(
               flex: 2,
-              child: Text("${data['sr'] ?? 0}")),
+              child: Text("${data['sr'] ?? 0}",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontSize: 12))),
         ],
       ),
     );
