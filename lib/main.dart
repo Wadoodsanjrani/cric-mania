@@ -240,115 +240,129 @@ class MatchDetailScreen extends StatelessWidget {
     );
   }
 
-  // ✅ BATTING HEADER — Status + center align
+  // ✅ BATTING HEADER — ESPN Style
   Widget _battingHeader() => Container(
         color: Colors.grey.shade100,
-        padding: EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+        padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         child: Row(
           children: [
             Expanded(
-                flex: 3,
-                child: Text("Batter",
+                flex: 5,
+                child: Text("BATTING",
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 10))),
+                        fontSize: 11))),
             Expanded(
-                flex: 3,
-                child: Text("Status",
-                    style: TextStyle(
-                        color: Colors.grey,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 10))),
-            Expanded(
-                flex: 1,
+                flex: 2,
                 child: Text("R",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 10))),
+                        fontSize: 11))),
             Expanded(
-                flex: 1,
+                flex: 2,
                 child: Text("B",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 10))),
+                        fontSize: 11))),
             Expanded(
-                flex: 1,
+                flex: 2,
                 child: Text("4s",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 10))),
+                        fontSize: 11))),
             Expanded(
-                flex: 1,
+                flex: 2,
                 child: Text("6s",
                     textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 10))),
+                        fontSize: 11))),
             Expanded(
-                flex: 2,
+                flex: 3,
                 child: Text("SR",
-                    textAlign: TextAlign.center,
+                    textAlign: TextAlign.right,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
-                        fontSize: 10))),
+                        fontSize: 11))),
           ],
         ),
       );
 
-  // ✅ BATTER ROW — center align
+  // ✅ BATTER ROW — ESPN Style (Name + Status neeche, Stats same line)
   Widget _batterRow(dynamic b) {
     Map data = b is Map ? b : {};
+    String name = data['name'] ?? '';
+    String status = data['howOut'] ?? '';
+    String r = data['r'] ?? '0';
+    String b_ = data['b'] ?? '0';
+    String fours = data['4s'] ?? '0';
+    String sixes = data['6s'] ?? '0';
+    String sr = data['sr'] ?? '0';
+
     return Padding(
-      padding: EdgeInsets.symmetric(horizontal: 8, vertical: 10),
+      padding: EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          // ─── LEFT: Name + Status ───
           Expanded(
-              flex: 3,
-              child: Text("${data['name'] ?? ''}",
-                  style: TextStyle(
-                      color: Color(0xFF0077B6),
-                      fontWeight: FontWeight.w500,
-                      fontSize: 12),
-                  overflow: TextOverflow.ellipsis)),
-          Expanded(
-              flex: 3,
-              child: Text("${data['howOut'] ?? ''}",
-                  style: TextStyle(color: Colors.grey[700], fontSize: 10),
-                  overflow: TextOverflow.ellipsis)),
-          Expanded(
-              flex: 1,
-              child: Text("${data['r'] ?? 0}",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12))),
-          Expanded(
-              flex: 1,
-              child: Text("${data['b'] ?? 0}",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12))),
-          Expanded(
-              flex: 1,
-              child: Text("${data['4s'] ?? 0}",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12))),
-          Expanded(
-              flex: 1,
-              child: Text("${data['6s'] ?? 0}",
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12))),
+            flex: 5,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(name,
+                    style: TextStyle(
+                        color: Color(0xFF0A1931),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 13)),
+                if (status.isNotEmpty)
+                  Padding(
+                    padding: EdgeInsets.only(top: 3),
+                    child: Text(status,
+                        style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 10)),
+                  ),
+              ],
+            ),
+          ),
+
+          // ─── RIGHT: Stats ───
           Expanded(
               flex: 2,
-              child: Text("${data['sr'] ?? 0}",
+              child: Text(r,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 12))),
+                  style: TextStyle(
+                      fontWeight: FontWeight.bold, fontSize: 12))),
+          Expanded(
+              flex: 2,
+              child: Text(b_,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[700], fontSize: 12))),
+          Expanded(
+              flex: 2,
+              child: Text(fours,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[700], fontSize: 12))),
+          Expanded(
+              flex: 2,
+              child: Text(sixes,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: Colors.grey[700], fontSize: 12))),
+          Expanded(
+              flex: 3,
+              child: Text(sr,
+                  textAlign: TextAlign.right,
+                  style: TextStyle(color: Colors.grey[700], fontSize: 12))),
         ],
       ),
     );
@@ -362,31 +376,35 @@ class MatchDetailScreen extends StatelessWidget {
           children: [
             Expanded(
                 flex: 3,
-                child: Text("Bowler",
+                child: Text("BOWLING",
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
                         fontSize: 11))),
             Expanded(
                 child: Text("O",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
                         fontSize: 11))),
             Expanded(
                 child: Text("M",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
                         fontSize: 11))),
             Expanded(
                 child: Text("R",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
                         fontSize: 11))),
             Expanded(
                 child: Text("W",
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                         color: Colors.grey,
                         fontWeight: FontWeight.bold,
@@ -406,10 +424,10 @@ class MatchDetailScreen extends StatelessWidget {
               child: Text("${data['name'] ?? ''}",
                   style: TextStyle(color: Color(0xFF0077B6)),
                   overflow: TextOverflow.ellipsis)),
-          Expanded(child: Text("${data['o'] ?? 0}")),
-          Expanded(child: Text("${data['m'] ?? 0}")),
-          Expanded(child: Text("${data['r'] ?? 0}")),
-          Expanded(child: Text("${data['w'] ?? 0}")),
+          Expanded(child: Text("${data['o'] ?? 0}", textAlign: TextAlign.center)),
+          Expanded(child: Text("${data['m'] ?? 0}", textAlign: TextAlign.center)),
+          Expanded(child: Text("${data['r'] ?? 0}", textAlign: TextAlign.center)),
+          Expanded(child: Text("${data['w'] ?? 0}", textAlign: TextAlign.center)),
         ],
       ),
     );
