@@ -1,5 +1,5 @@
 name: user_app
-description: "Cric Mania - Cricket App"
+description: "A new Flutter project."
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -11,13 +11,6 @@ dependencies:
   flutter:
     sdk: flutter
   cupertino_icons: ^1.0.8
-  firebase_core: ^3.6.0
-  cloud_firestore: ^5.4.0
-  firebase_auth: ^5.3.0
-  firebase_storage: ^12.3.0
-  shared_preferences: ^2.3.2
-  cached_network_image: ^3.4.1
-  intl: ^0.19.0
 
 dev_dependencies:
   flutter_test:
