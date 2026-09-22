@@ -658,8 +658,15 @@ class MatchDetailScreen extends StatelessWidget {
   }
 }
 
-// ─── NEWS TAB ───
-class NewsTab extends StatelessWidget {
+// ─── NEWS TAB (With English/Urdu Toggle) ───
+class NewsTab extends StatefulWidget {
+  @override
+  _NewsTabState createState() => _NewsTabState();
+}
+
+class _NewsTabState extends State<NewsTab> {
+  String _selectedLanguage = 'en'; // Default English
+
   Widget _buildNewsImage(Map<String, dynamic> news) {
     try {
       if (news['imageBase64'] != null &&
@@ -695,94 +702,208 @@ class NewsTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('news')
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.hasError)
-          return Center(child: Text("Error: ${snapshot.error}"));
-        if (!snapshot.hasData)
-          return Center(child: CircularProgressIndicator());
-        if (snapshot.data!.docs.isEmpty)
-          return Center(
-            child: Text(
-              "No News Yet",
-              style: TextStyle(color: AppColors.textGrey),
-            ),
-          );
-
-        int now = DateTime.now().millisecondsSinceEpoch;
-        var filtered = snapshot.data!.docs.where((doc) {
-          var data = doc.data() as Map<String, dynamic>;
-          int t = data['timestamp'] ?? now;
-          return now - t < 172800000;
-        }).toList();
-
-        return ListView.builder(
-          padding: EdgeInsets.all(10),
-          itemCount: filtered.length,
-          itemBuilder: (context, index) {
-            var news = filtered[index].data() as Map<String, dynamic>;
-            return InkWell(
-              onTap: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (_) => NewsDetailScreen(newsData: news),
+    return Scaffold(
+      backgroundColor: AppColors.darkBg,
+      body: Column(
+        children: [
+          // ─── LANGUAGE TOGGLE ───
+          Container(
+            padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+            color: AppColors.cardBg,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                ChoiceChip(
+                  label: Text("English"),
+                  selected: _selectedLanguage == 'en',
+                  onSelected: (val) =>
+                      setState(() => _selectedLanguage = 'en'),
+                  selectedColor: AppColors.accent,
+                  labelStyle: TextStyle(
+                    color: _selectedLanguage == 'en'
+                        ? Colors.white
+                        : AppColors.textLight,
+                    fontWeight: FontWeight.bold,
                   ),
-                );
-              },
-              child: Card(
-                color: AppColors.cardBg,
-                margin: EdgeInsets.only(bottom: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _buildNewsImage(news),
-                    Padding(
-                      padding: EdgeInsets.all(10),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            news['title'] ?? "",
-                            style: TextStyle(
-                              color: AppColors.textLight,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
-                          ),
-                          SizedBox(height: 5),
-                          Text(
-                            news['desc'] ?? "",
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: TextStyle(color: AppColors.textGrey),
-                          ),
-                          SizedBox(height: 5),
-                          Text(
-                            "Tap to read more...",
-                            style: TextStyle(
-                              color: AppColors.accent,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
+                SizedBox(width: 12),
+                ChoiceChip(
+                  label: Text(
+                    "اردو",
+                    style: TextStyle(
+                      fontFamily: 'NotoNastaliqUrdu',
+                      fontSize: 16,
+                    ),
+                  ),
+                  selected: _selectedLanguage == 'ur',
+                  onSelected: (val) =>
+                      setState(() => _selectedLanguage = 'ur'),
+                  selectedColor: AppColors.accent,
+                  labelStyle: TextStyle(
+                    color: _selectedLanguage == 'ur'
+                        ? Colors.white
+                        : AppColors.textLight,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // ─── NEWS LIST ───
+          Expanded(
+            child: StreamBuilder<QuerySnapshot>(
+              stream: FirebaseFirestore.instance
+                  .collection('news')
+                  .where('language', isEqualTo: _selectedLanguage)
+                  .orderBy('timestamp', descending: true)
+                  .snapshots(),
+              builder: (context, snapshot) {
+                if (snapshot.hasError)
+                  return Center(child: Text("Error: ${snapshot.error}"));
+                if (!snapshot.hasData)
+                  return Center(child: CircularProgressIndicator());
+                if (snapshot.data!.docs.isEmpty)
+                  return Center(
+                    child: Text(
+                      _selectedLanguage == 'ur'
+                          ? "کوئی خبر نہیں"
+                          : "No News Yet",
+                      style: TextStyle(
+                        color: AppColors.textGrey,
+                        fontFamily: _selectedLanguage == 'ur'
+                            ? 'NotoNastaliqUrdu'
+                            : null,
+                        fontSize: _selectedLanguage == 'ur' ? 18 : 14,
                       ),
                     ),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+                  );
+
+                int now = DateTime.now().millisecondsSinceEpoch;
+                var filtered = snapshot.data!.docs.where((doc) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  int t = data['timestamp'] ?? now;
+                  return now - t < 172800000;
+                }).toList();
+
+                return ListView.builder(
+                  padding: EdgeInsets.all(10),
+                  itemCount: filtered.length,
+                  itemBuilder: (context, index) {
+                    var news =
+                        filtered[index].data() as Map<String, dynamic>;
+                    bool isUrdu = news['language'] == 'ur';
+
+                    return InkWell(
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                NewsDetailScreen(newsData: news),
+                          ),
+                        );
+                      },
+                      child: Card(
+                        color: AppColors.cardBg,
+                        margin: EdgeInsets.only(bottom: 10),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            _buildNewsImage(news),
+                            Padding(
+                              padding: EdgeInsets.all(10),
+                              child: Column(
+                                crossAxisAlignment: isUrdu
+                                    ? CrossAxisAlignment.end
+                                    : CrossAxisAlignment.start,
+                                children: [
+                                  // ─── LANGUAGE BADGE ───
+                                  Container(
+                                    padding: EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 2,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: isUrdu
+                                          ? Colors.orange
+                                          : Colors.blue,
+                                      borderRadius:
+                                          BorderRadius.circular(10),
+                                    ),
+                                    child: Text(
+                                      isUrdu ? "اردو" : "ENGLISH",
+                                      style: TextStyle(
+                                        color: Colors.white,
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                        fontFamily: isUrdu
+                                            ? 'NotoNastaliqUrdu'
+                                            : null,
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(height: 6),
+                                  Text(
+                                    news['title'] ?? "",
+                                    style: TextStyle(
+                                      color: AppColors.textLight,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: isUrdu ? 18 : 16,
+                                      fontFamily: isUrdu
+                                          ? 'NotoNastaliqUrdu'
+                                          : null,
+                                    ),
+                                    textDirection: isUrdu
+                                        ? TextDirection.rtl
+                                        : TextDirection.ltr,
+                                  ),
+                                  SizedBox(height: 5),
+                                  Text(
+                                    news['desc'] ?? "",
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      color: AppColors.textGrey,
+                                      fontFamily: isUrdu
+                                          ? 'NotoNastaliqUrdu'
+                                          : null,
+                                      fontSize: isUrdu ? 16 : 14,
+                                    ),
+                                    textDirection: isUrdu
+                                        ? TextDirection.rtl
+                                        : TextDirection.ltr,
+                                  ),
+                                  SizedBox(height: 5),
+                                  Text(
+                                    isUrdu
+                                        ? "مزید پڑھیں..."
+                                        : "Tap to read more...",
+                                    style: TextStyle(
+                                      color: AppColors.accent,
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: isUrdu
+                                          ? 'NotoNastaliqUrdu'
+                                          : null,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    );
+                  },
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -824,14 +945,17 @@ class NewsDetailScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    bool isUrdu = newsData['language'] == 'ur';
+
     return Scaffold(
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         title: Text(
-          "News Detail",
+          isUrdu ? "خبر کی تفصیل" : "News Detail",
           style: TextStyle(
             color: Colors.white,
             fontWeight: FontWeight.bold,
+            fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
           ),
         ),
         iconTheme: IconThemeData(color: Colors.white),
@@ -845,21 +969,48 @@ class NewsDetailScreen extends StatelessWidget {
       ),
       body: SingleChildScrollView(
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: isUrdu
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
           children: [
             _buildDetailImage(),
             Padding(
               padding: EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: isUrdu
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
                 children: [
+                  // ─── LANGUAGE BADGE ───
+                  Container(
+                    padding:
+                        EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isUrdu ? Colors.orange : Colors.blue,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      isUrdu ? "اردو" : "ENGLISH",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 12),
                   Text(
                     newsData['title'] ?? "",
                     style: TextStyle(
                       color: AppColors.textLight,
-                      fontSize: 22,
+                      fontSize: isUrdu ? 24 : 22,
                       fontWeight: FontWeight.bold,
+                      fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
                     ),
+                    textDirection: isUrdu
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
                   ),
                   SizedBox(height: 12),
                   Divider(color: AppColors.textGrey),
@@ -868,9 +1019,13 @@ class NewsDetailScreen extends StatelessWidget {
                     newsData['desc'] ?? "",
                     style: TextStyle(
                       color: AppColors.textLight,
-                      fontSize: 16,
-                      height: 1.6,
+                      fontSize: isUrdu ? 18 : 16,
+                      height: 1.8,
+                      fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
                     ),
+                    textDirection: isUrdu
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
                   ),
                   SizedBox(height: 20),
                   if ((newsData['fullDesc'] ?? "").toString().isNotEmpty)
@@ -878,9 +1033,13 @@ class NewsDetailScreen extends StatelessWidget {
                       newsData['fullDesc'],
                       style: TextStyle(
                         color: AppColors.textLight,
-                        fontSize: 16,
-                        height: 1.6,
+                        fontSize: isUrdu ? 18 : 16,
+                        height: 1.8,
+                        fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
                       ),
+                      textDirection: isUrdu
+                          ? TextDirection.rtl
+                          : TextDirection.ltr,
                     ),
                 ],
               ),
