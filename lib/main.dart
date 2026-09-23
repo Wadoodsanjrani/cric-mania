@@ -16,6 +16,12 @@ class AppColors {
   static const Color textLight = Color(0xFFEAEAEA);
   static const Color textGrey = Color(0xFF9E9E9E);
   static const Color divider = Color(0xFF3D3D5C);
+
+  // ─── NEWS LIGHT THEME ───
+  static const Color newsBg = Color(0xFFFAF9F6); // Soft Cream
+  static const Color newsCard = Colors.white;
+  static const Color newsText = Color(0xFF1B1B2F); // Dark text
+  static const Color newsTextGrey = Color(0xFF6B6B6B);
 }
 
 void main() async {
@@ -82,7 +88,7 @@ class _MainTabsState extends State<MainTabs> {
   }
 }
 
-// ─── LIVE SCORE TAB ───
+// ─── LIVE SCORE TAB (DARK THEME) ───
 class LiveScoreTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -216,7 +222,7 @@ class LiveScoreTab extends StatelessWidget {
   }
 }
 
-// ─── MATCH DETAIL SCREEN ───
+// ─── MATCH DETAIL SCREEN (DARK THEME) ───
 class MatchDetailScreen extends StatelessWidget {
   final String matchId;
   MatchDetailScreen({required this.matchId});
@@ -320,7 +326,6 @@ class MatchDetailScreen extends StatelessWidget {
     );
   }
 
-  // ─── BATTING HEADER (Columns fixed) ───
   Widget _battingHeader() => Container(
         decoration: BoxDecoration(
           color: AppColors.darkBg.withOpacity(0.6),
@@ -408,7 +413,6 @@ class MatchDetailScreen extends StatelessWidget {
         ),
       );
 
-  // ─── BATTER ROW (2-line layout, aligned with header) ───
   Widget _batterRow(dynamic b) {
     Map data = b is Map ? b : {};
     String name = data['name'] ?? '';
@@ -429,7 +433,6 @@ class MatchDetailScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // ─── LINE 1: Name + Status ───
           Row(
             children: [
               Expanded(
@@ -465,12 +468,9 @@ class MatchDetailScreen extends StatelessWidget {
             ],
           ),
           SizedBox(height: 6),
-          // ─── LINE 2: Stats aligned with header ───
           Row(
             children: [
-              // Name column ka khali space (flex 5)
               Expanded(flex: 5, child: SizedBox()),
-              // R (flex 2)
               Expanded(
                 flex: 2,
                 child: Text(
@@ -483,7 +483,6 @@ class MatchDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              // B (flex 2)
               Expanded(
                 flex: 2,
                 child: Text(
@@ -495,7 +494,6 @@ class MatchDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              // 4s (flex 2)
               Expanded(
                 flex: 2,
                 child: Text(
@@ -507,7 +505,6 @@ class MatchDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              // 6s (flex 2)
               Expanded(
                 flex: 2,
                 child: Text(
@@ -519,7 +516,6 @@ class MatchDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              // SR (flex 3)
               Expanded(
                 flex: 3,
                 child: Text(
@@ -538,7 +534,6 @@ class MatchDetailScreen extends StatelessWidget {
     );
   }
 
-  // ─── BOWLER HEADER ───
   Widget _bowlerHeader() => Container(
         color: AppColors.darkBg.withOpacity(0.6),
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
@@ -658,14 +653,14 @@ class MatchDetailScreen extends StatelessWidget {
   }
 }
 
-// ─── NEWS TAB (With English/Urdu Toggle) ───
+// ─── NEWS TAB (LIGHT CREAM THEME) ───
 class NewsTab extends StatefulWidget {
   @override
   _NewsTabState createState() => _NewsTabState();
 }
 
 class _NewsTabState extends State<NewsTab> {
-  String _selectedLanguage = 'en'; // Default English
+  String _selectedLanguage = 'en';
 
   Widget _buildNewsImage(Map<String, dynamic> news) {
     try {
@@ -678,8 +673,8 @@ class _NewsTabState extends State<NewsTab> {
           fit: BoxFit.cover,
           errorBuilder: (c, e, s) => Container(
             height: 150,
-            color: AppColors.cardBg,
-            child: Icon(Icons.broken_image, color: AppColors.textGrey),
+            color: Colors.grey[300],
+            child: Icon(Icons.broken_image, color: Colors.grey[600]),
           ),
         );
       }
@@ -691,8 +686,8 @@ class _NewsTabState extends State<NewsTab> {
           fit: BoxFit.cover,
           errorBuilder: (c, e, s) => Container(
             height: 150,
-            color: AppColors.cardBg,
-            child: Icon(Icons.broken_image, color: AppColors.textGrey),
+            color: Colors.grey[300],
+            child: Icon(Icons.broken_image, color: Colors.grey[600]),
           ),
         );
       }
@@ -703,13 +698,13 @@ class _NewsTabState extends State<NewsTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.darkBg,
+      backgroundColor: AppColors.newsBg, // ← LIGHT CREAM
       body: Column(
         children: [
           // ─── LANGUAGE TOGGLE ───
           Container(
             padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            color: AppColors.cardBg,
+            color: Colors.white, // ← White background
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -719,10 +714,11 @@ class _NewsTabState extends State<NewsTab> {
                   onSelected: (val) =>
                       setState(() => _selectedLanguage = 'en'),
                   selectedColor: AppColors.accent,
+                  backgroundColor: Colors.grey[200],
                   labelStyle: TextStyle(
                     color: _selectedLanguage == 'en'
                         ? Colors.white
-                        : AppColors.textLight,
+                        : Colors.black87, // ← Dark text
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -739,10 +735,11 @@ class _NewsTabState extends State<NewsTab> {
                   onSelected: (val) =>
                       setState(() => _selectedLanguage = 'ur'),
                   selectedColor: AppColors.accent,
+                  backgroundColor: Colors.grey[200],
                   labelStyle: TextStyle(
                     color: _selectedLanguage == 'ur'
                         ? Colors.white
-                        : AppColors.textLight,
+                        : Colors.black87, // ← Dark text
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -759,7 +756,12 @@ class _NewsTabState extends State<NewsTab> {
                   .snapshots(),
               builder: (context, snapshot) {
                 if (snapshot.hasError)
-                  return Center(child: Text("Error: ${snapshot.error}"));
+                  return Center(
+                    child: Text(
+                      "Error: ${snapshot.error}",
+                      style: TextStyle(color: Colors.red[700]),
+                    ),
+                  );
                 if (!snapshot.hasData)
                   return Center(child: CircularProgressIndicator());
                 if (snapshot.data!.docs.isEmpty)
@@ -769,7 +771,7 @@ class _NewsTabState extends State<NewsTab> {
                           ? "کوئی خبر نہیں"
                           : "No News Yet",
                       style: TextStyle(
-                        color: AppColors.textGrey,
+                        color: Colors.grey[600],
                         fontFamily: _selectedLanguage == 'ur'
                             ? 'NotoNastaliqUrdu'
                             : null,
@@ -804,7 +806,8 @@ class _NewsTabState extends State<NewsTab> {
                         );
                       },
                       child: Card(
-                        color: AppColors.cardBg,
+                        color: AppColors.newsCard, // ← WHITE
+                        elevation: 2, // ← Halki shadow
                         margin: EdgeInsets.only(bottom: 10),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -849,7 +852,7 @@ class _NewsTabState extends State<NewsTab> {
                                   Text(
                                     news['title'] ?? "",
                                     style: TextStyle(
-                                      color: AppColors.textLight,
+                                      color: AppColors.newsText, // ← DARK
                                       fontWeight: FontWeight.bold,
                                       fontSize: isUrdu ? 18 : 16,
                                       fontFamily: isUrdu
@@ -866,7 +869,7 @@ class _NewsTabState extends State<NewsTab> {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: AppColors.textGrey,
+                                      color: AppColors.newsTextGrey, // ← GREY
                                       fontFamily: isUrdu
                                           ? 'NotoNastaliqUrdu'
                                           : null,
@@ -908,7 +911,7 @@ class _NewsTabState extends State<NewsTab> {
   }
 }
 
-// ─── NEWS DETAIL SCREEN ───
+// ─── NEWS DETAIL SCREEN (LIGHT CREAM THEME) ───
 class NewsDetailScreen extends StatelessWidget {
   final Map<String, dynamic> newsData;
   NewsDetailScreen({required this.newsData});
@@ -948,6 +951,7 @@ class NewsDetailScreen extends StatelessWidget {
     bool isUrdu = newsData['language'] == 'ur';
 
     return Scaffold(
+      backgroundColor: AppColors.newsBg, // ← LIGHT CREAM
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         title: Text(
@@ -1003,7 +1007,7 @@ class NewsDetailScreen extends StatelessWidget {
                   Text(
                     newsData['title'] ?? "",
                     style: TextStyle(
-                      color: AppColors.textLight,
+                      color: AppColors.newsText, // ← DARK
                       fontSize: isUrdu ? 24 : 22,
                       fontWeight: FontWeight.bold,
                       fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
@@ -1013,12 +1017,12 @@ class NewsDetailScreen extends StatelessWidget {
                         : TextDirection.ltr,
                   ),
                   SizedBox(height: 12),
-                  Divider(color: AppColors.textGrey),
+                  Divider(color: Colors.grey[400]),
                   SizedBox(height: 12),
                   Text(
                     newsData['desc'] ?? "",
                     style: TextStyle(
-                      color: AppColors.textLight,
+                      color: AppColors.newsText, // ← DARK
                       fontSize: isUrdu ? 18 : 16,
                       height: 1.8,
                       fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
@@ -1032,7 +1036,7 @@ class NewsDetailScreen extends StatelessWidget {
                     Text(
                       newsData['fullDesc'],
                       style: TextStyle(
-                        color: AppColors.textLight,
+                        color: AppColors.newsText, // ← DARK
                         fontSize: isUrdu ? 18 : 16,
                         height: 1.8,
                         fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
@@ -1051,7 +1055,7 @@ class NewsDetailScreen extends StatelessWidget {
   }
 }
 
-// ─── PREMIUM TAB ───
+// ─── PREMIUM TAB (DARK THEME) ───
 class PremiumTab extends StatefulWidget {
   @override
   _PremiumTabState createState() => _PremiumTabState();
