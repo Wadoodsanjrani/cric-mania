@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
@@ -785,7 +784,7 @@ class MatchDetailScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// NEWS TAB — 2 TABS (LATEST + ARCHIVED)
+// NEWS TAB — WHITE BAR (waise hi) + LIGHT CREAM LIST
 // ═══════════════════════════════════════════════════════════
 class NewsTab extends StatefulWidget {
   @override
@@ -802,6 +801,7 @@ class _NewsTabState extends State<NewsTab> {
       backgroundColor: AppColors.newsBg,
       body: Column(
         children: [
+          // ─── LANGUAGE TOGGLE (WHITE) ───
           Container(
             padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             color: Colors.white,
@@ -848,6 +848,8 @@ class _NewsTabState extends State<NewsTab> {
               ],
             ),
           ),
+
+          // ─── NEWS TABS (WHITE) ───
           Container(
             color: Colors.white,
             child: Row(
@@ -925,6 +927,8 @@ class _NewsTabState extends State<NewsTab> {
               ],
             ),
           ),
+
+          // ─── NEWS LIST (LIGHT CREAM) ───
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -1141,9 +1145,7 @@ class _NewsTabState extends State<NewsTab> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// NEWS DETAIL SCREEN — DARK BLUE THEME (Share icon removed)
-// ═══════════════════════════════════════════════════════════
+// ─── NEWS DETAIL SCREEN ───
 class NewsDetailScreen extends StatelessWidget {
   final Map<String, dynamic> newsData;
   NewsDetailScreen({required this.newsData});
@@ -1175,7 +1177,7 @@ class NewsDetailScreen extends StatelessWidget {
     bool isUrdu = newsData['language'] == 'ur';
 
     return Scaffold(
-      backgroundColor: AppColors.darkBg, // ← TWEAK 1: Dark Blue
+      backgroundColor: AppColors.darkBg,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         title: Text(
@@ -1187,7 +1189,6 @@ class NewsDetailScreen extends StatelessWidget {
           ),
         ),
         iconTheme: IconThemeData(color: Colors.white),
-        // ← TWEAK 2: Share icon hata diya
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -1224,7 +1225,7 @@ class NewsDetailScreen extends StatelessWidget {
                   Text(
                     newsData['title'] ?? "",
                     style: TextStyle(
-                      color: AppColors.textLight, // ← Light text
+                      color: AppColors.textLight,
                       fontSize: isUrdu ? 24 : 22,
                       fontWeight: FontWeight.bold,
                       fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
@@ -1233,12 +1234,12 @@ class NewsDetailScreen extends StatelessWidget {
                         isUrdu ? TextDirection.rtl : TextDirection.ltr,
                   ),
                   SizedBox(height: 12),
-                  Divider(color: AppColors.divider), // ← Dark divider
+                  Divider(color: AppColors.divider),
                   SizedBox(height: 12),
                   Text(
                     newsData['desc'] ?? "",
                     style: TextStyle(
-                      color: AppColors.textLight, // ← Light text
+                      color: AppColors.textLight,
                       fontSize: isUrdu ? 18 : 16,
                       height: 1.8,
                       fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
@@ -1251,7 +1252,7 @@ class NewsDetailScreen extends StatelessWidget {
                     Text(
                       newsData['fullDesc'],
                       style: TextStyle(
-                        color: AppColors.textLight, // ← Light text
+                        color: AppColors.textLight,
                         fontSize: isUrdu ? 18 : 16,
                         height: 1.8,
                         fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
@@ -1269,42 +1270,15 @@ class NewsDetailScreen extends StatelessWidget {
   }
 }
 
-// ─── PREMIUM TAB ───
+// ═══════════════════════════════════════════════════════════
+// PREMIUM TAB — PAYMENT DISABLED (COMING SOON)
+// ═══════════════════════════════════════════════════════════
 class PremiumTab extends StatefulWidget {
   @override
   _PremiumTabState createState() => _PremiumTabState();
 }
 
 class _PremiumTabState extends State<PremiumTab> {
-  final String easyIban = "PK82TMFB0000000013806423";
-  final String easyName = "Abdul Wadood";
-  bool isPremiumActive = false;
-  int? expiryDate;
-
-  @override
-  void initState() {
-    super.initState();
-    loadPremium();
-  }
-
-  loadPremium() async {
-    SharedPreferences prefs = await SharedPreferences.getInstance();
-    setState(() {
-      isPremiumActive = prefs.getBool('isPremium') ?? false;
-      expiryDate = prefs.getInt('premium_expiry');
-    });
-  }
-
-  void copyIban() {
-    Clipboard.setData(ClipboardData(text: easyIban));
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("IBAN Copied! $easyIban"),
-        backgroundColor: Colors.green,
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) => Scaffold(
         body: SingleChildScrollView(
@@ -1312,146 +1286,103 @@ class _PremiumTabState extends State<PremiumTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
+              // ─── HEADER ───
               Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(15),
+                padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  color: AppColors.cardBg,
-                  borderRadius: BorderRadius.circular(10),
+                  gradient: LinearGradient(
+                    colors: [AppColors.accent, AppColors.primary],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(15),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      "CRIC MANIA PREMIUM",
-                      style: TextStyle(
-                        color: AppColors.textLight,
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      "AD FREE",
-                      style: TextStyle(
-                        color: AppColors.accent,
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                    if (isPremiumActive && expiryDate != null)
-                      Padding(
-                        padding: EdgeInsets.only(top: 10),
-                        child: Text(
-                          "Premium Active Till: ${DateTime.fromMillisecondsSinceEpoch(expiryDate!).toString().substring(0, 10)}",
+                    Row(
+                      children: [
+                        Icon(Icons.workspace_premium,
+                            color: Colors.white, size: 32),
+                        SizedBox(width: 10),
+                        Text(
+                          "CRIC MANIA PREMIUM",
                           style: TextStyle(
-                            color: Colors.greenAccent,
+                            color: Colors.white,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
                           ),
                         ),
+                      ],
+                    ),
+                    SizedBox(height: 10),
+                    Text(
+                      "Unlock exclusive features",
+                      style: TextStyle(
+                        color: Colors.white70,
+                        fontSize: 14,
                       ),
+                    ),
                   ],
                 ),
               ),
-              SizedBox(height: 20),
-              Card(
-                color: AppColors.cardBg,
-                child: ListTile(
-                  title: Text(
-                    "Monthly - 30 RS",
-                    style: TextStyle(color: AppColors.textLight),
-                  ),
-                  trailing: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                    ),
-                    onPressed: () => _payDialog("Monthly", 30),
-                    child: Text("Buy", style: TextStyle(color: Colors.white)),
-                  ),
+              SizedBox(height: 25),
+
+              // ─── FEATURES LIST ───
+              Text(
+                "Premium Features:",
+                style: TextStyle(
+                  color: AppColors.textLight,
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-              Card(
-                color: AppColors.cardBg,
-                child: ListTile(
-                  title: Text(
-                    "Annual - 250 RS",
-                    style: TextStyle(color: AppColors.textLight),
-                  ),
-                  trailing: ElevatedButton(
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.accent,
-                    ),
-                    onPressed: () => _payDialog("Annual", 250),
-                    child: Text("Buy", style: TextStyle(color: Colors.white)),
-                  ),
-                ),
-              ),
-              SizedBox(height: 20),
+              SizedBox(height: 15),
+
+              _featureItem(Icons.block, "Ad-Free Experience",
+                  "No ads while using the app"),
+              _featureItem(Icons.speed, "Faster Loading",
+                  "Priority access to live scores"),
+              _featureItem(Icons.hd, "HD Scorecards",
+                  "High quality match details"),
+              _featureItem(Icons.notifications, "Match Alerts",
+                  "Get notified for your favorite teams"),
+              _featureItem(Icons.download, "Offline Mode",
+                  "Save news for offline reading"),
+
+              SizedBox(height: 30),
+
+              // ─── COMING SOON ───
               Container(
                 width: double.infinity,
-                padding: EdgeInsets.all(12),
+                padding: EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  border: Border.all(color: AppColors.accent),
-                  borderRadius: BorderRadius.circular(8),
+                  color: AppColors.cardBg,
+                  borderRadius: BorderRadius.circular(15),
+                  border: Border.all(color: AppColors.accent, width: 2),
                 ),
                 child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    Icon(Icons.schedule,
+                        color: AppColors.accent, size: 48),
+                    SizedBox(height: 12),
                     Text(
-                      "Send Payment To:",
+                      "COMING SOON",
                       style: TextStyle(
-                        color: AppColors.textLight,
+                        color: AppColors.accent,
+                        fontSize: 24,
                         fontWeight: FontWeight.bold,
+                        letterSpacing: 2,
                       ),
                     ),
                     SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: SelectableText(
-                            easyIban,
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              color: AppColors.accent,
-                            ),
-                          ),
-                        ),
-                        IconButton(
-                          icon: Icon(Icons.copy, color: AppColors.accent),
-                          onPressed: copyIban,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 4),
                     Text(
-                      easyName,
+                      "Premium subscription will be available soon",
+                      textAlign: TextAlign.center,
                       style: TextStyle(
-                        color: AppColors.textLight,
-                        fontWeight: FontWeight.bold,
-                        fontSize: 15,
-                      ),
-                    ),
-                    Text(
-                      "Easypaisa Account",
-                      style: TextStyle(
-                        fontSize: 13,
                         color: AppColors.textGrey,
-                      ),
-                    ),
-                    SizedBox(height: 10),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton.icon(
-                        icon: Icon(Icons.copy, color: Colors.white, size: 18),
-                        label: Text(
-                          "Copy IBAN",
-                          style: TextStyle(color: Colors.white),
-                        ),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.accent,
-                        ),
-                        onPressed: copyIban,
+                        fontSize: 14,
                       ),
                     ),
                   ],
@@ -1462,155 +1393,42 @@ class _PremiumTabState extends State<PremiumTab> {
         ),
       );
 
-  _payDialog(String type, int amount) {
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.cardBg,
-        title: Text(
-          "Pay $amount RS for $type",
-          style: TextStyle(color: AppColors.textLight),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              "Send $amount RS to:",
-              style: TextStyle(color: AppColors.textLight),
+  Widget _featureItem(IconData icon, String title, String subtitle) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: 15),
+      child: Row(
+        children: [
+          Container(
+            width: 45,
+            height: 45,
+            decoration: BoxDecoration(
+              color: AppColors.accent.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(10),
             ),
-            SizedBox(height: 8),
-            Row(
+            child: Icon(icon, color: AppColors.accent, size: 24),
+          ),
+          SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Expanded(
-                  child: SelectableText(
-                    easyIban,
-                    style: TextStyle(
-                      fontWeight: FontWeight.bold,
-                      color: AppColors.accent,
-                    ),
+                Text(
+                  title,
+                  style: TextStyle(
+                    color: AppColors.textLight,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
                   ),
                 ),
-                IconButton(
-                  icon: Icon(Icons.copy, color: AppColors.accent),
-                  onPressed: () {
-                    Clipboard.setData(ClipboardData(text: easyIban));
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text("IBAN Copied!")),
-                    );
-                  },
+                SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  style: TextStyle(
+                    color: AppColors.textGrey,
+                    fontSize: 12,
+                  ),
                 ),
               ],
-            ),
-            SizedBox(height: 4),
-            Text(
-              easyName,
-              style: TextStyle(
-                color: AppColors.textLight,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            Text(
-              "Easypaisa Account",
-              style: TextStyle(fontSize: 12, color: AppColors.textGrey),
-            ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Cancel", style: TextStyle(color: AppColors.textGrey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-            ),
-            onPressed: () {
-              Navigator.pop(context);
-              _showTxnInput(type, amount);
-            },
-            child: Text(
-              "I Have Paid",
-              style: TextStyle(color: Colors.white),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  _showTxnInput(String type, int amount) {
-    TextEditingController txnCtrl = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (_) => AlertDialog(
-        backgroundColor: AppColors.cardBg,
-        title: Text(
-          "Enter Transaction ID",
-          style: TextStyle(color: AppColors.textLight),
-        ),
-        content: TextField(
-          controller: txnCtrl,
-          style: TextStyle(color: AppColors.textLight),
-          decoration: InputDecoration(
-            labelText: "TID",
-            labelStyle: TextStyle(color: AppColors.textGrey),
-            border: OutlineInputBorder(),
-            enabledBorder: OutlineInputBorder(
-              borderSide: BorderSide(color: AppColors.textGrey),
-            ),
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: Text("Cancel", style: TextStyle(color: AppColors.textGrey)),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.accent,
-            ),
-            onPressed: () async {
-              if (txnCtrl.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("TID zaroori hai"),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              try {
-                await FirebaseFirestore.instance
-                    .collection('payment_requests')
-                    .add({
-                  'tid': txnCtrl.text.trim(),
-                  'type': type,
-                  'amount': amount,
-                  'status': 'pending',
-                  'timestamp': DateTime.now().millisecondsSinceEpoch,
-                });
-
-                Navigator.pop(context);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Request Sent! Admin verify karega."),
-                    backgroundColor: Colors.green,
-                  ),
-                );
-              } catch (e) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text("Error: $e"),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-              }
-            },
-            child: Text(
-              "Submit",
-              style: TextStyle(color: Colors.white),
             ),
           ),
         ],
