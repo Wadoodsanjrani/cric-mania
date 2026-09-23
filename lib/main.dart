@@ -4,7 +4,6 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:share_plus/share_plus.dart';
 import 'firebase_options.dart';
 
 // ─── APP COLORS ───
@@ -95,13 +94,12 @@ class LiveScoreTab extends StatefulWidget {
 }
 
 class _LiveScoreTabState extends State<LiveScoreTab> {
-  int _matchTab = 0; // 0 = Live, 1 = Recent
+  int _matchTab = 0;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
-        // ─── 2 TABS ───
         Container(
           color: AppColors.cardBg,
           child: Row(
@@ -196,8 +194,6 @@ class _LiveScoreTabState extends State<LiveScoreTab> {
             ],
           ),
         ),
-
-        // ─── MATCHES LIST ───
         Expanded(
           child: StreamBuilder<QuerySnapshot>(
             stream: FirebaseFirestore.instance
@@ -798,7 +794,7 @@ class NewsTab extends StatefulWidget {
 
 class _NewsTabState extends State<NewsTab> {
   String _selectedLanguage = 'en';
-  int _newsTab = 0; // 0 = Latest, 1 = Archived
+  int _newsTab = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -806,7 +802,6 @@ class _NewsTabState extends State<NewsTab> {
       backgroundColor: AppColors.newsBg,
       body: Column(
         children: [
-          // ─── LANGUAGE TOGGLE ───
           Container(
             padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             color: Colors.white,
@@ -853,8 +848,6 @@ class _NewsTabState extends State<NewsTab> {
               ],
             ),
           ),
-
-          // ─── NEWS TABS (LATEST + ARCHIVED) ───
           Container(
             color: Colors.white,
             child: Row(
@@ -932,8 +925,6 @@ class _NewsTabState extends State<NewsTab> {
               ],
             ),
           ),
-
-          // ─── NEWS LIST ───
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -1150,7 +1141,9 @@ class _NewsTabState extends State<NewsTab> {
   }
 }
 
-// ─── NEWS DETAIL SCREEN ───
+// ═══════════════════════════════════════════════════════════
+// NEWS DETAIL SCREEN — DARK BLUE THEME (Share icon removed)
+// ═══════════════════════════════════════════════════════════
 class NewsDetailScreen extends StatelessWidget {
   final Map<String, dynamic> newsData;
   NewsDetailScreen({required this.newsData});
@@ -1177,20 +1170,12 @@ class NewsDetailScreen extends StatelessWidget {
     return SizedBox();
   }
 
-  void _shareNews() {
-    String title = newsData['title'] ?? '';
-    String desc = newsData['desc'] ?? '';
-    String shareText = '$title\n\n$desc\n\nShared from Cric Mania app';
-
-    Share.share(shareText, subject: title);
-  }
-
   @override
   Widget build(BuildContext context) {
     bool isUrdu = newsData['language'] == 'ur';
 
     return Scaffold(
-      backgroundColor: AppColors.newsBg,
+      backgroundColor: AppColors.darkBg, // ← TWEAK 1: Dark Blue
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         title: Text(
@@ -1202,13 +1187,7 @@ class NewsDetailScreen extends StatelessWidget {
           ),
         ),
         iconTheme: IconThemeData(color: Colors.white),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.share, color: Colors.white),
-            onPressed: _shareNews,
-            tooltip: 'Share',
-          ),
-        ],
+        // ← TWEAK 2: Share icon hata diya
       ),
       body: SingleChildScrollView(
         child: Column(
@@ -1245,7 +1224,7 @@ class NewsDetailScreen extends StatelessWidget {
                   Text(
                     newsData['title'] ?? "",
                     style: TextStyle(
-                      color: AppColors.newsText,
+                      color: AppColors.textLight, // ← Light text
                       fontSize: isUrdu ? 24 : 22,
                       fontWeight: FontWeight.bold,
                       fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
@@ -1254,12 +1233,12 @@ class NewsDetailScreen extends StatelessWidget {
                         isUrdu ? TextDirection.rtl : TextDirection.ltr,
                   ),
                   SizedBox(height: 12),
-                  Divider(color: Colors.grey[400]),
+                  Divider(color: AppColors.divider), // ← Dark divider
                   SizedBox(height: 12),
                   Text(
                     newsData['desc'] ?? "",
                     style: TextStyle(
-                      color: AppColors.newsText,
+                      color: AppColors.textLight, // ← Light text
                       fontSize: isUrdu ? 18 : 16,
                       height: 1.8,
                       fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
@@ -1272,7 +1251,7 @@ class NewsDetailScreen extends StatelessWidget {
                     Text(
                       newsData['fullDesc'],
                       style: TextStyle(
-                        color: AppColors.newsText,
+                        color: AppColors.textLight, // ← Light text
                         fontSize: isUrdu ? 18 : 16,
                         height: 1.8,
                         fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
