@@ -48,7 +48,8 @@ class MainTabs extends StatefulWidget {
 
 class _MainTabsState extends State<MainTabs> {
   int _index = 0;
-  final List<Widget> _tabs = [LiveScoreTab(), NewsTab(), PremiumTab()];
+  // ✅ PremiumTab hata diya
+  final List<Widget> _tabs = [LiveScoreTab(), NewsTab()];
 
   @override
   Widget build(BuildContext context) {
@@ -73,10 +74,7 @@ class _MainTabsState extends State<MainTabs> {
             label: "Live Score",
           ),
           BottomNavigationBarItem(icon: Icon(Icons.newspaper), label: "News"),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.workspace_premium),
-            label: "Premium",
-          ),
+          // ✅ Premium item hata diya
         ],
       ),
     );
@@ -394,23 +392,85 @@ class MatchDetailScreen extends StatelessWidget {
     );
   }
 
+  // ═══════════════════════════════════════════════════════
+  // ✅ UPDATED: TEST format → 4 innings, ODI/T20I → 2 innings
+  // ═══════════════════════════════════════════════════════
   Widget _buildScorecardTab(Map<String, dynamic> m) {
-    List team1Bat = m['team1Batting'] ?? [];
-    List team1Bowl = m['team1Bowling'] ?? [];
-    List team2Bat = m['team2Batting'] ?? [];
-    List team2Bowl = m['team2Bowling'] ?? [];
+    String format = (m['format'] ?? 'ODI').toString().toUpperCase();
+    bool isTest = format == 'TEST';
 
+    // ─── COMMON INFO ───
     String team1 = m['team1'] ?? 'Team 1';
     String team2 = m['team2'] ?? 'Team 2';
-    String score1 = m['score1'] ?? '';
-    String score2 = m['score2'] ?? '';
 
-    return ListView(
-      padding: EdgeInsets.all(8),
-      children: [
-        _scorecardSection("$team1 — $score1", team1Bat, team2Bowl),
-        _scorecardSection("$team2 — $score2", team2Bat, team1Bowl),
-      ],
+    if (isTest) {
+      // ═══════════════════════════════════════════════
+      // TEST FORMAT → 4 INNINGS (innings1..innings4)
+      // ═══════════════════════════════════════════════
+      return ListView(
+        padding: EdgeInsets.all(8),
+        children: [
+          _buildTestInnings(m, 'innings1', '1st Innings'),
+          _buildTestInnings(m, 'innings2', '2nd Innings'),
+          _buildTestInnings(m, 'innings3', '3rd Innings'),
+          _buildTestInnings(m, 'innings4', '4th Innings'),
+        ],
+      );
+    } else {
+      // ═══════════════════════════════════════════════
+      // ODI / T20I → 2 INNINGS (flat structure)
+      // ═══════════════════════════════════════════════
+      List team1Bat = m['team1Batting'] ?? [];
+      List team1Bowl = m['team1Bowling'] ?? [];
+      List team2Bat = m['team2Batting'] ?? [];
+      List team2Bowl = m['team2Bowling'] ?? [];
+
+      String score1 = m['score1'] ?? '';
+      String score2 = m['score2'] ?? '';
+
+      return ListView(
+        padding: EdgeInsets.all(8),
+        children: [
+          _scorecardSection("$team1 — $score1", team1Bat, team2Bowl),
+          _scorecardSection("$team2 — $score2", team2Bat, team1Bowl),
+        ],
+      );
+    }
+  }
+
+  // ─── TEST INNINGS BUILDER ───
+  Widget _buildTestInnings(
+      Map<String, dynamic> m, String inningsKey, String label) {
+    Map<String, dynamic>? innings = m[inningsKey] as Map<String, dynamic>?;
+
+    if (innings == null || innings.isEmpty) {
+      return Card(
+        color: AppColors.cardBg,
+        margin: EdgeInsets.only(bottom: 12),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Text(
+            "$label — No data",
+            style: TextStyle(
+              color: AppColors.textGrey,
+              fontStyle: FontStyle.italic,
+            ),
+          ),
+        ),
+      );
+    }
+
+    String battingTeam = innings['team'] ?? '';
+    List batting = innings['batting'] ?? [];
+    List bowling = innings['bowling'] ?? [];
+
+    return _scorecardSection(
+      "$battingTeam — $label",
+      batting,
+      bowling,
     );
   }
 
@@ -907,7 +967,7 @@ class _NewsTabState extends State<NewsTab> {
                       child: Text(
                         _selectedLanguage == 'ur'
                             ? "پرانی خبریں"
-                            : "OLDER NEWS", // ← YEH CHANGE KIYA
+                            : "OLDER NEWS",
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: _newsTab == 1
@@ -990,7 +1050,7 @@ class _NewsTabState extends State<NewsTab> {
                               : "No Latest News")
                           : (_selectedLanguage == 'ur'
                               ? "کوئی پرانی خبر نہیں"
-                              : "No Older News"), // ← YEH CHANGE KIYA
+                              : "No Older News"),
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontFamily: _selectedLanguage == 'ur'
@@ -1271,162 +1331,4 @@ class NewsDetailScreen extends StatelessWidget {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// PREMIUM TAB — PAYMENT DISABLED (COMING SOON)
-// ═══════════════════════════════════════════════════════════
-class PremiumTab extends StatefulWidget {
-  @override
-  _PremiumTabState createState() => _PremiumTabState();
-}
-
-class _PremiumTabState extends State<PremiumTab> {
-  @override
-  Widget build(BuildContext context) => Scaffold(
-        body: SingleChildScrollView(
-          padding: EdgeInsets.all(20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [AppColors.accent, AppColors.primary],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Icon(Icons.workspace_premium,
-                            color: Colors.white, size: 32),
-                        SizedBox(width: 10),
-                        Text(
-                          "CRIC MANIA PREMIUM",
-                          style: TextStyle(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: 10),
-                    Text(
-                      "Unlock exclusive features",
-                      style: TextStyle(
-                        color: Colors.white70,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(height: 25),
-              Text(
-                "Premium Features:",
-                style: TextStyle(
-                  color: AppColors.textLight,
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-              SizedBox(height: 15),
-              _featureItem(Icons.block, "Ad-Free Experience",
-                  "No ads while using the app"),
-              _featureItem(Icons.speed, "Faster Loading",
-                  "Priority access to live scores"),
-              _featureItem(Icons.hd, "HD Scorecards",
-                  "High quality match details"),
-              _featureItem(Icons.notifications, "Match Alerts",
-                  "Get notified for your favorite teams"),
-              _featureItem(Icons.download, "Offline Mode",
-                  "Save news for offline reading"),
-              SizedBox(height: 30),
-              Container(
-                width: double.infinity,
-                padding: EdgeInsets.all(20),
-                decoration: BoxDecoration(
-                  color: AppColors.cardBg,
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: AppColors.accent, width: 2),
-                ),
-                child: Column(
-                  children: [
-                    Icon(Icons.schedule,
-                        color: AppColors.accent, size: 48),
-                    SizedBox(height: 12),
-                    Text(
-                      "COMING SOON",
-                      style: TextStyle(
-                        color: AppColors.accent,
-                        fontSize: 24,
-                        fontWeight: FontWeight.bold,
-                        letterSpacing: 2,
-                      ),
-                    ),
-                    SizedBox(height: 8),
-                    Text(
-                      "Premium subscription will be available soon",
-                      textAlign: TextAlign.center,
-                      style: TextStyle(
-                        color: AppColors.textGrey,
-                        fontSize: 14,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-
-  Widget _featureItem(IconData icon, String title, String subtitle) {
-    return Padding(
-      padding: EdgeInsets.only(bottom: 15),
-      child: Row(
-        children: [
-          Container(
-            width: 45,
-            height: 45,
-            decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.2),
-              borderRadius: BorderRadius.circular(10),
-            ),
-            child: Icon(icon, color: AppColors.accent, size: 24),
-          ),
-          SizedBox(width: 15),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: TextStyle(
-                    color: AppColors.textLight,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 15,
-                  ),
-                ),
-                SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  style: TextStyle(
-                    color: AppColors.textGrey,
-                    fontSize: 12,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
+// ✅ PremiumTab class DELETE kar di gayi hai
