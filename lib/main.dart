@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
@@ -85,7 +84,7 @@ class _MainTabsState extends State<MainTabs> {
 }
 
 // ═══════════════════════════════════════════════════════════
-// LIVE SCORE TAB — 2 TABS (LIVE + RECENT)
+// LIVE SCORE TAB — 2 TABS (LIVE + RECENT) — isLive field
 // ═══════════════════════════════════════════════════════════
 class LiveScoreTab extends StatefulWidget {
   @override
@@ -210,19 +209,17 @@ class _LiveScoreTabState extends State<LiveScoreTab> {
                   ),
                 );
 
-              int now = DateTime.now().millisecondsSinceEpoch;
               var allMatches = snapshot.data!.docs;
 
+              // ─── isLive FIELD KE HISAAB SE FILTER ───
               var liveMatches = allMatches.where((doc) {
                 var data = doc.data() as Map<String, dynamic>;
-                int t = data['timestamp'] ?? now;
-                return now - t < 518400000;
+                return data['isLive'] == true;
               }).toList();
 
               var recentMatches = allMatches.where((doc) {
                 var data = doc.data() as Map<String, dynamic>;
-                int t = data['timestamp'] ?? now;
-                return now - t >= 518400000;
+                return data['isLive'] != true;
               }).toList();
 
               var displayMatches =
@@ -784,7 +781,7 @@ class MatchDetailScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// NEWS TAB — WHITE BAR (waise hi) + LIGHT CREAM LIST
+// NEWS TAB — WHITE BAR + LIGHT CREAM LIST — isArchived field
 // ═══════════════════════════════════════════════════════════
 class NewsTab extends StatefulWidget {
   @override
@@ -801,7 +798,6 @@ class _NewsTabState extends State<NewsTab> {
       backgroundColor: AppColors.newsBg,
       body: Column(
         children: [
-          // ─── LANGUAGE TOGGLE (WHITE) ───
           Container(
             padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             color: Colors.white,
@@ -848,8 +844,6 @@ class _NewsTabState extends State<NewsTab> {
               ],
             ),
           ),
-
-          // ─── NEWS TABS (WHITE) ───
           Container(
             color: Colors.white,
             child: Row(
@@ -927,8 +921,6 @@ class _NewsTabState extends State<NewsTab> {
               ],
             ),
           ),
-
-          // ─── NEWS LIST (LIGHT CREAM) ───
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -962,19 +954,17 @@ class _NewsTabState extends State<NewsTab> {
                     ),
                   );
 
-                int now = DateTime.now().millisecondsSinceEpoch;
                 var allNews = snapshot.data!.docs;
 
+                // ─── isArchived FIELD KE HISAAB SE FILTER ───
                 var latestNews = allNews.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
-                  int t = data['timestamp'] ?? now;
-                  return now - t < 172800000;
+                  return data['isArchived'] != true;
                 }).toList();
 
                 var archivedNews = allNews.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
-                  int t = data['timestamp'] ?? now;
-                  return now - t >= 172800000;
+                  return data['isArchived'] == true;
                 }).toList();
 
                 var displayNews =
@@ -1286,7 +1276,6 @@ class _PremiumTabState extends State<PremiumTab> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // ─── HEADER ───
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.all(20),
@@ -1329,7 +1318,6 @@ class _PremiumTabState extends State<PremiumTab> {
               ),
               SizedBox(height: 25),
 
-              // ─── FEATURES LIST ───
               Text(
                 "Premium Features:",
                 style: TextStyle(
@@ -1353,7 +1341,6 @@ class _PremiumTabState extends State<PremiumTab> {
 
               SizedBox(height: 30),
 
-              // ─── COMING SOON ───
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.all(20),
