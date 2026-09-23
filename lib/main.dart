@@ -20,7 +20,7 @@ class AppColors {
   // ─── NEWS LIGHT THEME ───
   static const Color newsBg = Color(0xFFFAF9F6); // Soft Cream
   static const Color newsCard = Colors.white;
-  static const Color newsText = Color(0xFF1B1B2F); // Dark text
+  static const Color newsText = Color(0xFF1B1B2F);
   static const Color newsTextGrey = Color(0xFF6B6B6B);
 }
 
@@ -88,7 +88,7 @@ class _MainTabsState extends State<MainTabs> {
   }
 }
 
-// ─── LIVE SCORE TAB (DARK THEME) ───
+// ─── LIVE SCORE TAB ───
 class LiveScoreTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -222,7 +222,7 @@ class LiveScoreTab extends StatelessWidget {
   }
 }
 
-// ─── MATCH DETAIL SCREEN (DARK THEME) ───
+// ─── MATCH DETAIL SCREEN ───
 class MatchDetailScreen extends StatelessWidget {
   final String matchId;
   MatchDetailScreen({required this.matchId});
@@ -698,13 +698,12 @@ class _NewsTabState extends State<NewsTab> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.newsBg, // ← LIGHT CREAM
+      backgroundColor: AppColors.newsBg,
       body: Column(
         children: [
-          // ─── LANGUAGE TOGGLE ───
           Container(
             padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-            color: Colors.white, // ← White background
+            color: Colors.white,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
@@ -718,7 +717,7 @@ class _NewsTabState extends State<NewsTab> {
                   labelStyle: TextStyle(
                     color: _selectedLanguage == 'en'
                         ? Colors.white
-                        : Colors.black87, // ← Dark text
+                        : Colors.black87,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
@@ -739,14 +738,13 @@ class _NewsTabState extends State<NewsTab> {
                   labelStyle: TextStyle(
                     color: _selectedLanguage == 'ur'
                         ? Colors.white
-                        : Colors.black87, // ← Dark text
+                        : Colors.black87,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
               ],
             ),
           ),
-          // ─── NEWS LIST ───
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -806,8 +804,8 @@ class _NewsTabState extends State<NewsTab> {
                         );
                       },
                       child: Card(
-                        color: AppColors.newsCard, // ← WHITE
-                        elevation: 2, // ← Halki shadow
+                        color: AppColors.newsCard,
+                        elevation: 2,
                         margin: EdgeInsets.only(bottom: 10),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(12),
@@ -823,7 +821,6 @@ class _NewsTabState extends State<NewsTab> {
                                     ? CrossAxisAlignment.end
                                     : CrossAxisAlignment.start,
                                 children: [
-                                  // ─── LANGUAGE BADGE ───
                                   Container(
                                     padding: EdgeInsets.symmetric(
                                       horizontal: 8,
@@ -852,7 +849,7 @@ class _NewsTabState extends State<NewsTab> {
                                   Text(
                                     news['title'] ?? "",
                                     style: TextStyle(
-                                      color: AppColors.newsText, // ← DARK
+                                      color: AppColors.newsText,
                                       fontWeight: FontWeight.bold,
                                       fontSize: isUrdu ? 18 : 16,
                                       fontFamily: isUrdu
@@ -869,7 +866,7 @@ class _NewsTabState extends State<NewsTab> {
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
                                     style: TextStyle(
-                                      color: AppColors.newsTextGrey, // ← GREY
+                                      color: AppColors.newsTextGrey,
                                       fontFamily: isUrdu
                                           ? 'NotoNastaliqUrdu'
                                           : null,
@@ -951,7 +948,7 @@ class NewsDetailScreen extends StatelessWidget {
     bool isUrdu = newsData['language'] == 'ur';
 
     return Scaffold(
-      backgroundColor: AppColors.newsBg, // ← LIGHT CREAM
+      backgroundColor: AppColors.newsBg,
       appBar: AppBar(
         backgroundColor: AppColors.primary,
         title: Text(
@@ -985,7 +982,6 @@ class NewsDetailScreen extends StatelessWidget {
                     ? CrossAxisAlignment.end
                     : CrossAxisAlignment.start,
                 children: [
-                  // ─── LANGUAGE BADGE ───
                   Container(
                     padding:
                         EdgeInsets.symmetric(horizontal: 10, vertical: 4),
@@ -1007,7 +1003,7 @@ class NewsDetailScreen extends StatelessWidget {
                   Text(
                     newsData['title'] ?? "",
                     style: TextStyle(
-                      color: AppColors.newsText, // ← DARK
+                      color: AppColors.newsText,
                       fontSize: isUrdu ? 24 : 22,
                       fontWeight: FontWeight.bold,
                       fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
@@ -1022,7 +1018,7 @@ class NewsDetailScreen extends StatelessWidget {
                   Text(
                     newsData['desc'] ?? "",
                     style: TextStyle(
-                      color: AppColors.newsText, // ← DARK
+                      color: AppColors.newsText,
                       fontSize: isUrdu ? 18 : 16,
                       height: 1.8,
                       fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
@@ -1036,7 +1032,7 @@ class NewsDetailScreen extends StatelessWidget {
                     Text(
                       newsData['fullDesc'],
                       style: TextStyle(
-                        color: AppColors.newsText, // ← DARK
+                        color: AppColors.newsText,
                         fontSize: isUrdu ? 18 : 16,
                         height: 1.8,
                         fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
@@ -1357,15 +1353,43 @@ class _PremiumTabState extends State<PremiumTab> {
               backgroundColor: AppColors.accent,
             ),
             onPressed: () async {
-              if (txnCtrl.text.isEmpty) return;
-              SharedPreferences prefs = await SharedPreferences.getInstance();
-              await prefs.setString('pending_txn', txnCtrl.text);
-              await prefs.setString('pending_type', type);
-              await prefs.setInt('pending_amount', amount);
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text("Request Sent!")),
-              );
+              if (txnCtrl.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("TID zaroori hai"),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              try {
+                // Firebase mein save karein
+                await FirebaseFirestore.instance
+                    .collection('payment_requests')
+                    .add({
+                  'tid': txnCtrl.text.trim(),
+                  'type': type,
+                  'amount': amount,
+                  'status': 'pending',
+                  'timestamp': DateTime.now().millisecondsSinceEpoch,
+                });
+
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Request Sent! Admin verify karega."),
+                    backgroundColor: Colors.green,
+                  ),
+                );
+              } catch (e) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Text("Error: $e"),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+              }
             },
             child: Text(
               "Submit",
