@@ -7,7 +7,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
 import 'firebase_options.dart';
 
-// ─── APP COLORS (Original Theme) ───
+// ─── APP COLORS ───
 class AppColors {
   static const Color primary = Color(0xFF1A73E8);
   static const Color darkBg = Color(0xFF1B1B2F);
@@ -16,9 +16,7 @@ class AppColors {
   static const Color textLight = Color(0xFFEAEAEA);
   static const Color textGrey = Color(0xFF9E9E9E);
   static const Color divider = Color(0xFF3D3D5C);
-
-  // ─── NEWS LIGHT THEME ───
-  static const Color newsBg = Color(0xFFFAF9F6); // Soft Cream
+  static const Color newsBg = Color(0xFFFAF9F6);
   static const Color newsCard = Colors.white;
   static const Color newsText = Color(0xFF1B1B2F);
   static const Color newsTextGrey = Color(0xFF6B6B6B);
@@ -88,7 +86,9 @@ class _MainTabsState extends State<MainTabs> {
   }
 }
 
-// ─── LIVE SCORE TAB ───
+// ═══════════════════════════════════════════════════════════
+// LIVE SCORE TAB — 2 SECTIONS (Active + Archived)
+// ═══════════════════════════════════════════════════════════
 class LiveScoreTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
@@ -109,115 +109,154 @@ class LiveScoreTab extends StatelessWidget {
           );
 
         int now = DateTime.now().millisecondsSinceEpoch;
-        var filtered = snapshot.data!.docs.where((doc) {
+        var allMatches = snapshot.data!.docs;
+
+        // Active: 6 din se kam
+        var activeMatches = allMatches.where((doc) {
           var data = doc.data() as Map<String, dynamic>;
           int t = data['timestamp'] ?? now;
           return now - t < 518400000;
         }).toList();
 
-        return ListView.builder(
-          padding: EdgeInsets.all(10),
-          itemCount: filtered.length,
-          itemBuilder: (context, index) {
-            var doc = filtered[index];
-            var m = doc.data() as Map<String, dynamic>;
-            String status = (m['status'] ?? "LIVE").toString().toUpperCase();
-            bool isResult = status.contains("RESULT") ||
-                status.contains("FINISH") ||
-                status.contains("ENDED");
+        // Archived: 6 din se zyada
+        var archivedMatches = allMatches.where((doc) {
+          var data = doc.data() as Map<String, dynamic>;
+          int t = data['timestamp'] ?? now;
+          return now - t >= 518400000;
+        }).toList();
 
-            return InkWell(
-              onTap: () => Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (_) => MatchDetailScreen(matchId: doc.id),
-                ),
-              ),
-              child: Card(
-                color: AppColors.cardBg,
-                margin: EdgeInsets.only(bottom: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Padding(
-                  padding: EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if ((m['tournament'] ?? "").toString().isNotEmpty)
-                        Text(
-                          m['tournament'],
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.accent,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      SizedBox(height: 6),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Expanded(
-                            child: Text(
-                              "${m['team1']} vs ${m['team2']}",
-                              style: TextStyle(
-                                color: AppColors.textLight,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 16,
-                              ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ),
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 2,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isResult
-                                  ? Colors.grey[600]
-                                  : Colors.redAccent,
-                              borderRadius: BorderRadius.circular(10),
-                            ),
-                            child: Text(
-                              status,
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 10,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: 8),
-                      Text(
-                        "${m['team1']}: ${m['score1']}",
-                        style: TextStyle(
-                          color: AppColors.textLight,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      Text(
-                        "${m['team2']}: ${m['score2']}",
-                        style: TextStyle(
-                          color: AppColors.textLight,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      SizedBox(height: 5),
-                      Text(
-                        m['result'] ?? "",
-                        style: TextStyle(color: AppColors.accent),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            );
-          },
+        return ListView(
+          padding: EdgeInsets.all(10),
+          children: [
+            // ─── ACTIVE MATCHES ───
+            if (activeMatches.isNotEmpty) ...[
+              _sectionHeader("LIVE / RECENT", AppColors.accent),
+              ...activeMatches.map((doc) => _matchCard(context, doc)).toList(),
+            ],
+
+            // ─── ARCHIVED MATCHES ───
+            if (archivedMatches.isNotEmpty) ...[
+              _sectionHeader("ARCHIVED MATCHES", AppColors.textGrey),
+              ...archivedMatches.map((doc) => _matchCard(context, doc)).toList(),
+            ],
+          ],
         );
       },
+    );
+  }
+
+  Widget _sectionHeader(String title, Color color) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Container(width: 3, height: 16, color: color),
+          SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              letterSpacing: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _matchCard(BuildContext context, dynamic doc) {
+    var m = doc.data() as Map<String, dynamic>;
+    String status = (m['status'] ?? "LIVE").toString().toUpperCase();
+    bool isResult = status.contains("RESULT") ||
+        status.contains("FINISH") ||
+        status.contains("ENDED");
+
+    return InkWell(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MatchDetailScreen(matchId: doc.id),
+        ),
+      ),
+      child: Card(
+        color: AppColors.cardBg,
+        margin: EdgeInsets.only(bottom: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if ((m['tournament'] ?? "").toString().isNotEmpty)
+                Text(
+                  m['tournament'],
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: AppColors.accent,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              SizedBox(height: 6),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Expanded(
+                    child: Text(
+                      "${m['team1']} vs ${m['team2']}",
+                      style: TextStyle(
+                        color: AppColors.textLight,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ),
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color:
+                          isResult ? Colors.grey[600] : Colors.redAccent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      status,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              SizedBox(height: 8),
+              Text(
+                "${m['team1']}: ${m['score1']}",
+                style: TextStyle(
+                  color: AppColors.textLight,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                "${m['team2']}: ${m['score2']}",
+                style: TextStyle(
+                  color: AppColors.textLight,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              SizedBox(height: 5),
+              Text(
+                m['result'] ?? "",
+                style: TextStyle(color: AppColors.accent),
+              ),
+            ],
+          ),
+        ),
+      ),
     );
   }
 }
@@ -653,7 +692,9 @@ class MatchDetailScreen extends StatelessWidget {
   }
 }
 
-// ─── NEWS TAB (LIGHT CREAM THEME) ───
+// ═══════════════════════════════════════════════════════════
+// NEWS TAB — 2 SECTIONS (Latest + Archived)
+// ═══════════════════════════════════════════════════════════
 class NewsTab extends StatefulWidget {
   @override
   _NewsTabState createState() => _NewsTabState();
@@ -662,45 +703,13 @@ class NewsTab extends StatefulWidget {
 class _NewsTabState extends State<NewsTab> {
   String _selectedLanguage = 'en';
 
-  Widget _buildNewsImage(Map<String, dynamic> news) {
-    try {
-      if (news['imageBase64'] != null &&
-          (news['imageBase64'] as String).isNotEmpty) {
-        return Image.memory(
-          base64Decode(news['imageBase64']),
-          height: 200,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (c, e, s) => Container(
-            height: 150,
-            color: Colors.grey[300],
-            child: Icon(Icons.broken_image, color: Colors.grey[600]),
-          ),
-        );
-      }
-      if (news['imageUrl'] != null && (news['imageUrl'] as String).isNotEmpty) {
-        return Image.network(
-          news['imageUrl'],
-          height: 200,
-          width: double.infinity,
-          fit: BoxFit.cover,
-          errorBuilder: (c, e, s) => Container(
-            height: 150,
-            color: Colors.grey[300],
-            child: Icon(Icons.broken_image, color: Colors.grey[600]),
-          ),
-        );
-      }
-    } catch (e) {}
-    return SizedBox();
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.newsBg,
       body: Column(
         children: [
+          // ─── LANGUAGE TOGGLE ───
           Container(
             padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             color: Colors.white,
@@ -745,6 +754,7 @@ class _NewsTabState extends State<NewsTab> {
               ],
             ),
           ),
+          // ─── NEWS LIST ───
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -779,125 +789,47 @@ class _NewsTabState extends State<NewsTab> {
                   );
 
                 int now = DateTime.now().millisecondsSinceEpoch;
-                var filtered = snapshot.data!.docs.where((doc) {
+                var allNews = snapshot.data!.docs;
+
+                // Latest: 48 ghante se kam
+                var latestNews = allNews.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
                   int t = data['timestamp'] ?? now;
                   return now - t < 172800000;
                 }).toList();
 
-                return ListView.builder(
-                  padding: EdgeInsets.all(10),
-                  itemCount: filtered.length,
-                  itemBuilder: (context, index) {
-                    var news =
-                        filtered[index].data() as Map<String, dynamic>;
-                    bool isUrdu = news['language'] == 'ur';
+                // Archived: 48 ghante se zyada
+                var archivedNews = allNews.where((doc) {
+                  var data = doc.data() as Map<String, dynamic>;
+                  int t = data['timestamp'] ?? now;
+                  return now - t >= 172800000;
+                }).toList();
 
-                    return InkWell(
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                NewsDetailScreen(newsData: news),
-                          ),
-                        );
-                      },
-                      child: Card(
-                        color: AppColors.newsCard,
-                        elevation: 2,
-                        margin: EdgeInsets.only(bottom: 10),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            _buildNewsImage(news),
-                            Padding(
-                              padding: EdgeInsets.all(10),
-                              child: Column(
-                                crossAxisAlignment: isUrdu
-                                    ? CrossAxisAlignment.end
-                                    : CrossAxisAlignment.start,
-                                children: [
-                                  Container(
-                                    padding: EdgeInsets.symmetric(
-                                      horizontal: 8,
-                                      vertical: 2,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: isUrdu
-                                          ? Colors.orange
-                                          : Colors.blue,
-                                      borderRadius:
-                                          BorderRadius.circular(10),
-                                    ),
-                                    child: Text(
-                                      isUrdu ? "اردو" : "ENGLISH",
-                                      style: TextStyle(
-                                        color: Colors.white,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.bold,
-                                        fontFamily: isUrdu
-                                            ? 'NotoNastaliqUrdu'
-                                            : null,
-                                      ),
-                                    ),
-                                  ),
-                                  SizedBox(height: 6),
-                                  Text(
-                                    news['title'] ?? "",
-                                    style: TextStyle(
-                                      color: AppColors.newsText,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: isUrdu ? 18 : 16,
-                                      fontFamily: isUrdu
-                                          ? 'NotoNastaliqUrdu'
-                                          : null,
-                                    ),
-                                    textDirection: isUrdu
-                                        ? TextDirection.rtl
-                                        : TextDirection.ltr,
-                                  ),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    news['desc'] ?? "",
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      color: AppColors.newsTextGrey,
-                                      fontFamily: isUrdu
-                                          ? 'NotoNastaliqUrdu'
-                                          : null,
-                                      fontSize: isUrdu ? 16 : 14,
-                                    ),
-                                    textDirection: isUrdu
-                                        ? TextDirection.rtl
-                                        : TextDirection.ltr,
-                                  ),
-                                  SizedBox(height: 5),
-                                  Text(
-                                    isUrdu
-                                        ? "مزید پڑھیں..."
-                                        : "Tap to read more...",
-                                    style: TextStyle(
-                                      color: AppColors.accent,
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.bold,
-                                      fontFamily: isUrdu
-                                          ? 'NotoNastaliqUrdu'
-                                          : null,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
+                return ListView(
+                  padding: EdgeInsets.all(10),
+                  children: [
+                    // ─── LATEST NEWS ───
+                    if (latestNews.isNotEmpty) ...[
+                      _sectionHeader(
+                        _selectedLanguage == 'ur'
+                            ? "تازہ خبریں"
+                            : "LATEST NEWS",
+                        AppColors.accent,
                       ),
-                    );
-                  },
+                      ...latestNews.map((doc) => _newsCard(context, doc)).toList(),
+                    ],
+
+                    // ─── ARCHIVED NEWS ───
+                    if (archivedNews.isNotEmpty) ...[
+                      _sectionHeader(
+                        _selectedLanguage == 'ur'
+                            ? "پرانی خبریں"
+                            : "ARCHIVED NEWS",
+                        Colors.grey[700]!,
+                      ),
+                      ...archivedNews.map((doc) => _newsCard(context, doc)).toList(),
+                    ],
+                  ],
                 );
               },
             ),
@@ -906,9 +838,159 @@ class _NewsTabState extends State<NewsTab> {
       ),
     );
   }
+
+  Widget _sectionHeader(String title, Color color) {
+    return Padding(
+      padding: EdgeInsets.symmetric(vertical: 10),
+      child: Row(
+        children: [
+          Container(width: 3, height: 16, color: color),
+          SizedBox(width: 8),
+          Text(
+            title,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.bold,
+              fontSize: 13,
+              letterSpacing: 1,
+              fontFamily: _selectedLanguage == 'ur'
+                  ? 'NotoNastaliqUrdu'
+                  : null,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _newsCard(BuildContext context, dynamic doc) {
+    var news = doc.data() as Map<String, dynamic>;
+    bool isUrdu = news['language'] == 'ur';
+
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => NewsDetailScreen(newsData: news),
+          ),
+        );
+      },
+      child: Card(
+        color: AppColors.newsCard,
+        elevation: 2,
+        margin: EdgeInsets.only(bottom: 10),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _buildNewsImage(news),
+            Padding(
+              padding: EdgeInsets.all(10),
+              child: Column(
+                crossAxisAlignment: isUrdu
+                    ? CrossAxisAlignment.end
+                    : CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: isUrdu ? Colors.orange : Colors.blue,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      isUrdu ? "اردو" : "ENGLISH",
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
+                      ),
+                    ),
+                  ),
+                  SizedBox(height: 6),
+                  Text(
+                    news['title'] ?? "",
+                    style: TextStyle(
+                      color: AppColors.newsText,
+                      fontWeight: FontWeight.bold,
+                      fontSize: isUrdu ? 18 : 16,
+                      fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
+                    ),
+                    textDirection: isUrdu
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    news['desc'] ?? "",
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: AppColors.newsTextGrey,
+                      fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
+                      fontSize: isUrdu ? 16 : 14,
+                    ),
+                    textDirection: isUrdu
+                        ? TextDirection.rtl
+                        : TextDirection.ltr,
+                  ),
+                  SizedBox(height: 5),
+                  Text(
+                    isUrdu ? "مزید پڑھیں..." : "Tap to read more...",
+                    style: TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNewsImage(Map<String, dynamic> news) {
+    try {
+      if (news['imageBase64'] != null &&
+          (news['imageBase64'] as String).isNotEmpty) {
+        return Image.memory(
+          base64Decode(news['imageBase64']),
+          height: 200,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (c, e, s) => Container(
+            height: 150,
+            color: Colors.grey[300],
+            child: Icon(Icons.broken_image, color: Colors.grey[600]),
+          ),
+        );
+      }
+      if (news['imageUrl'] != null && (news['imageUrl'] as String).isNotEmpty) {
+        return Image.network(
+          news['imageUrl'],
+          height: 200,
+          width: double.infinity,
+          fit: BoxFit.cover,
+          errorBuilder: (c, e, s) => Container(
+            height: 150,
+            color: Colors.grey[300],
+            child: Icon(Icons.broken_image, color: Colors.grey[600]),
+          ),
+        );
+      }
+    } catch (e) {}
+    return SizedBox();
+  }
 }
 
-// ─── NEWS DETAIL SCREEN (LIGHT CREAM THEME) ───
+// ─── NEWS DETAIL SCREEN ───
 class NewsDetailScreen extends StatelessWidget {
   final Map<String, dynamic> newsData;
   NewsDetailScreen({required this.newsData});
@@ -1008,9 +1090,8 @@ class NewsDetailScreen extends StatelessWidget {
                       fontWeight: FontWeight.bold,
                       fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
                     ),
-                    textDirection: isUrdu
-                        ? TextDirection.rtl
-                        : TextDirection.ltr,
+                    textDirection:
+                        isUrdu ? TextDirection.rtl : TextDirection.ltr,
                   ),
                   SizedBox(height: 12),
                   Divider(color: Colors.grey[400]),
@@ -1023,9 +1104,8 @@ class NewsDetailScreen extends StatelessWidget {
                       height: 1.8,
                       fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
                     ),
-                    textDirection: isUrdu
-                        ? TextDirection.rtl
-                        : TextDirection.ltr,
+                    textDirection:
+                        isUrdu ? TextDirection.rtl : TextDirection.ltr,
                   ),
                   SizedBox(height: 20),
                   if ((newsData['fullDesc'] ?? "").toString().isNotEmpty)
@@ -1037,9 +1117,8 @@ class NewsDetailScreen extends StatelessWidget {
                         height: 1.8,
                         fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
                       ),
-                      textDirection: isUrdu
-                          ? TextDirection.rtl
-                          : TextDirection.ltr,
+                      textDirection:
+                          isUrdu ? TextDirection.rtl : TextDirection.ltr,
                     ),
                 ],
               ),
@@ -1051,7 +1130,7 @@ class NewsDetailScreen extends StatelessWidget {
   }
 }
 
-// ─── PREMIUM TAB (DARK THEME) ───
+// ─── PREMIUM TAB ───
 class PremiumTab extends StatefulWidget {
   @override
   _PremiumTabState createState() => _PremiumTabState();
@@ -1364,7 +1443,6 @@ class _PremiumTabState extends State<PremiumTab> {
               }
 
               try {
-                // Firebase mein save karein
                 await FirebaseFirestore.instance
                     .collection('payment_requests')
                     .add({
