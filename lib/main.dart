@@ -87,82 +87,174 @@ class _MainTabsState extends State<MainTabs> {
 }
 
 // ═══════════════════════════════════════════════════════════
-// LIVE SCORE TAB — 2 SECTIONS (Active + Archived)
+// LIVE SCORE TAB — 2 TABS (LIVE + RECENT)
 // ═══════════════════════════════════════════════════════════
-class LiveScoreTab extends StatelessWidget {
+class LiveScoreTab extends StatefulWidget {
+  @override
+  _LiveScoreTabState createState() => _LiveScoreTabState();
+}
+
+class _LiveScoreTabState extends State<LiveScoreTab> {
+  int _matchTab = 0; // 0 = Live, 1 = Recent
+
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
-          .collection('matches')
-          .orderBy('timestamp', descending: true)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData)
-          return Center(child: CircularProgressIndicator());
-        if (snapshot.data!.docs.isEmpty)
-          return Center(
-            child: Text(
-              "No Matches Yet",
-              style: TextStyle(color: AppColors.textGrey),
-            ),
-          );
-
-        int now = DateTime.now().millisecondsSinceEpoch;
-        var allMatches = snapshot.data!.docs;
-
-        // Active: 6 din se kam
-        var activeMatches = allMatches.where((doc) {
-          var data = doc.data() as Map<String, dynamic>;
-          int t = data['timestamp'] ?? now;
-          return now - t < 518400000;
-        }).toList();
-
-        // Archived: 6 din se zyada
-        var archivedMatches = allMatches.where((doc) {
-          var data = doc.data() as Map<String, dynamic>;
-          int t = data['timestamp'] ?? now;
-          return now - t >= 518400000;
-        }).toList();
-
-        return ListView(
-          padding: EdgeInsets.all(10),
-          children: [
-            // ─── ACTIVE MATCHES ───
-            if (activeMatches.isNotEmpty) ...[
-              _sectionHeader("LIVE / RECENT", AppColors.accent),
-              ...activeMatches.map((doc) => _matchCard(context, doc)).toList(),
+    return Column(
+      children: [
+        // ─── 2 TABS ───
+        Container(
+          color: AppColors.cardBg,
+          child: Row(
+            children: [
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _matchTab = 0),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: _matchTab == 0
+                              ? AppColors.accent
+                              : Colors.transparent,
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: _matchTab == 0
+                                ? Colors.redAccent
+                                : AppColors.textGrey,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          "LIVE",
+                          style: TextStyle(
+                            color: _matchTab == 0
+                                ? AppColors.accent
+                                : AppColors.textGrey,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+              Expanded(
+                child: GestureDetector(
+                  onTap: () => setState(() => _matchTab = 1),
+                  child: Container(
+                    padding: EdgeInsets.symmetric(vertical: 14),
+                    decoration: BoxDecoration(
+                      border: Border(
+                        bottom: BorderSide(
+                          color: _matchTab == 1
+                              ? AppColors.accent
+                              : Colors.transparent,
+                          width: 3,
+                        ),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.history,
+                          size: 14,
+                          color: _matchTab == 1
+                              ? AppColors.accent
+                              : AppColors.textGrey,
+                        ),
+                        SizedBox(width: 6),
+                        Text(
+                          "RECENT",
+                          style: TextStyle(
+                            color: _matchTab == 1
+                                ? AppColors.accent
+                                : AppColors.textGrey,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 14,
+                            letterSpacing: 1,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
             ],
-
-            // ─── ARCHIVED MATCHES ───
-            if (archivedMatches.isNotEmpty) ...[
-              _sectionHeader("ARCHIVED MATCHES", AppColors.textGrey),
-              ...archivedMatches.map((doc) => _matchCard(context, doc)).toList(),
-            ],
-          ],
-        );
-      },
-    );
-  }
-
-  Widget _sectionHeader(String title, Color color) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Container(width: 3, height: 16, color: color),
-          SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              letterSpacing: 1,
-            ),
           ),
-        ],
-      ),
+        ),
+
+        // ─── MATCHES LIST ───
+        Expanded(
+          child: StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('matches')
+                .orderBy('timestamp', descending: true)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData)
+                return Center(child: CircularProgressIndicator());
+              if (snapshot.data!.docs.isEmpty)
+                return Center(
+                  child: Text(
+                    "No Matches Yet",
+                    style: TextStyle(color: AppColors.textGrey),
+                  ),
+                );
+
+              int now = DateTime.now().millisecondsSinceEpoch;
+              var allMatches = snapshot.data!.docs;
+
+              var liveMatches = allMatches.where((doc) {
+                var data = doc.data() as Map<String, dynamic>;
+                int t = data['timestamp'] ?? now;
+                return now - t < 518400000;
+              }).toList();
+
+              var recentMatches = allMatches.where((doc) {
+                var data = doc.data() as Map<String, dynamic>;
+                int t = data['timestamp'] ?? now;
+                return now - t >= 518400000;
+              }).toList();
+
+              var displayMatches =
+                  _matchTab == 0 ? liveMatches : recentMatches;
+
+              if (displayMatches.isEmpty) {
+                return Center(
+                  child: Text(
+                    _matchTab == 0
+                        ? "No Live Matches"
+                        : "No Recent Matches",
+                    style: TextStyle(color: AppColors.textGrey),
+                  ),
+                );
+              }
+
+              return ListView.builder(
+                padding: EdgeInsets.all(10),
+                itemCount: displayMatches.length,
+                itemBuilder: (context, index) {
+                  return _matchCard(context, displayMatches[index]);
+                },
+              );
+            },
+          ),
+        ),
+      ],
     );
   }
 
@@ -216,10 +308,14 @@ class LiveScoreTab extends StatelessWidget {
                     ),
                   ),
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
-                      color:
-                          isResult ? Colors.grey[600] : Colors.redAccent,
+                      color: isResult
+                          ? Colors.grey[600]
+                          : Colors.redAccent,
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: Text(
@@ -693,7 +789,7 @@ class MatchDetailScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// NEWS TAB — 2 SECTIONS (Latest + Archived)
+// NEWS TAB — 2 TABS (LATEST + ARCHIVED)
 // ═══════════════════════════════════════════════════════════
 class NewsTab extends StatefulWidget {
   @override
@@ -702,6 +798,7 @@ class NewsTab extends StatefulWidget {
 
 class _NewsTabState extends State<NewsTab> {
   String _selectedLanguage = 'en';
+  int _newsTab = 0; // 0 = Latest, 1 = Archived
 
   @override
   Widget build(BuildContext context) {
@@ -719,8 +816,9 @@ class _NewsTabState extends State<NewsTab> {
                 ChoiceChip(
                   label: Text("English"),
                   selected: _selectedLanguage == 'en',
-                  onSelected: (val) =>
-                      setState(() => _selectedLanguage = 'en'),
+                  onSelected: (val) {
+                    setState(() => _selectedLanguage = 'en');
+                  },
                   selectedColor: AppColors.accent,
                   backgroundColor: Colors.grey[200],
                   labelStyle: TextStyle(
@@ -740,8 +838,9 @@ class _NewsTabState extends State<NewsTab> {
                     ),
                   ),
                   selected: _selectedLanguage == 'ur',
-                  onSelected: (val) =>
-                      setState(() => _selectedLanguage = 'ur'),
+                  onSelected: (val) {
+                    setState(() => _selectedLanguage = 'ur');
+                  },
                   selectedColor: AppColors.accent,
                   backgroundColor: Colors.grey[200],
                   labelStyle: TextStyle(
@@ -754,6 +853,86 @@ class _NewsTabState extends State<NewsTab> {
               ],
             ),
           ),
+
+          // ─── NEWS TABS (LATEST + ARCHIVED) ───
+          Container(
+            color: Colors.white,
+            child: Row(
+              children: [
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _newsTab = 0),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: _newsTab == 0
+                                ? AppColors.accent
+                                : Colors.transparent,
+                            width: 3,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        _selectedLanguage == 'ur'
+                            ? "تازہ خبریں"
+                            : "LATEST",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: _newsTab == 0
+                              ? AppColors.accent
+                              : Colors.grey[600],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          letterSpacing: 1,
+                          fontFamily: _selectedLanguage == 'ur'
+                              ? 'NotoNastaliqUrdu'
+                              : null,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: GestureDetector(
+                    onTap: () => setState(() => _newsTab = 1),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 12),
+                      decoration: BoxDecoration(
+                        border: Border(
+                          bottom: BorderSide(
+                            color: _newsTab == 1
+                                ? AppColors.accent
+                                : Colors.transparent,
+                            width: 3,
+                          ),
+                        ),
+                      ),
+                      child: Text(
+                        _selectedLanguage == 'ur'
+                            ? "پرانی خبریں"
+                            : "ARCHIVED",
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: _newsTab == 1
+                              ? AppColors.accent
+                              : Colors.grey[600],
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13,
+                          letterSpacing: 1,
+                          fontFamily: _selectedLanguage == 'ur'
+                              ? 'NotoNastaliqUrdu'
+                              : null,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           // ─── NEWS LIST ───
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
@@ -791,71 +970,50 @@ class _NewsTabState extends State<NewsTab> {
                 int now = DateTime.now().millisecondsSinceEpoch;
                 var allNews = snapshot.data!.docs;
 
-                // Latest: 48 ghante se kam
                 var latestNews = allNews.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
                   int t = data['timestamp'] ?? now;
                   return now - t < 172800000;
                 }).toList();
 
-                // Archived: 48 ghante se zyada
                 var archivedNews = allNews.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
                   int t = data['timestamp'] ?? now;
                   return now - t >= 172800000;
                 }).toList();
 
-                return ListView(
-                  padding: EdgeInsets.all(10),
-                  children: [
-                    // ─── LATEST NEWS ───
-                    if (latestNews.isNotEmpty) ...[
-                      _sectionHeader(
-                        _selectedLanguage == 'ur'
-                            ? "تازہ خبریں"
-                            : "LATEST NEWS",
-                        AppColors.accent,
-                      ),
-                      ...latestNews.map((doc) => _newsCard(context, doc)).toList(),
-                    ],
+                var displayNews =
+                    _newsTab == 0 ? latestNews : archivedNews;
 
-                    // ─── ARCHIVED NEWS ───
-                    if (archivedNews.isNotEmpty) ...[
-                      _sectionHeader(
-                        _selectedLanguage == 'ur'
-                            ? "پرانی خبریں"
-                            : "ARCHIVED NEWS",
-                        Colors.grey[700]!,
+                if (displayNews.isEmpty) {
+                  return Center(
+                    child: Text(
+                      _newsTab == 0
+                          ? (_selectedLanguage == 'ur'
+                              ? "کوئی تازہ خبر نہیں"
+                              : "No Latest News")
+                          : (_selectedLanguage == 'ur'
+                              ? "کوئی پرانی خبر نہیں"
+                              : "No Archived News"),
+                      style: TextStyle(
+                        color: Colors.grey[600],
+                        fontFamily: _selectedLanguage == 'ur'
+                            ? 'NotoNastaliqUrdu'
+                            : null,
+                        fontSize: _selectedLanguage == 'ur' ? 18 : 14,
                       ),
-                      ...archivedNews.map((doc) => _newsCard(context, doc)).toList(),
-                    ],
-                  ],
+                    ),
+                  );
+                }
+
+                return ListView.builder(
+                  padding: EdgeInsets.all(10),
+                  itemCount: displayNews.length,
+                  itemBuilder: (context, index) {
+                    return _newsCard(context, displayNews[index]);
+                  },
                 );
               },
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _sectionHeader(String title, Color color) {
-    return Padding(
-      padding: EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Container(width: 3, height: 16, color: color),
-          SizedBox(width: 8),
-          Text(
-            title,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.bold,
-              fontSize: 13,
-              letterSpacing: 1,
-              fontFamily: _selectedLanguage == 'ur'
-                  ? 'NotoNastaliqUrdu'
-                  : null,
             ),
           ),
         ],
@@ -895,7 +1053,10 @@ class _NewsTabState extends State<NewsTab> {
                     : CrossAxisAlignment.start,
                 children: [
                   Container(
-                    padding: EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: isUrdu ? Colors.orange : Colors.blue,
                       borderRadius: BorderRadius.circular(10),
@@ -919,9 +1080,8 @@ class _NewsTabState extends State<NewsTab> {
                       fontSize: isUrdu ? 18 : 16,
                       fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
                     ),
-                    textDirection: isUrdu
-                        ? TextDirection.rtl
-                        : TextDirection.ltr,
+                    textDirection:
+                        isUrdu ? TextDirection.rtl : TextDirection.ltr,
                   ),
                   SizedBox(height: 5),
                   Text(
@@ -933,9 +1093,8 @@ class _NewsTabState extends State<NewsTab> {
                       fontFamily: isUrdu ? 'NotoNastaliqUrdu' : null,
                       fontSize: isUrdu ? 16 : 14,
                     ),
-                    textDirection: isUrdu
-                        ? TextDirection.rtl
-                        : TextDirection.ltr,
+                    textDirection:
+                        isUrdu ? TextDirection.rtl : TextDirection.ltr,
                   ),
                   SizedBox(height: 5),
                   Text(
@@ -972,7 +1131,8 @@ class _NewsTabState extends State<NewsTab> {
           ),
         );
       }
-      if (news['imageUrl'] != null && (news['imageUrl'] as String).isNotEmpty) {
+      if (news['imageUrl'] != null &&
+          (news['imageUrl'] as String).isNotEmpty) {
         return Image.network(
           news['imageUrl'],
           height: 200,
