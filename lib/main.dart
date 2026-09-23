@@ -84,7 +84,7 @@ class _MainTabsState extends State<MainTabs> {
 }
 
 // ═══════════════════════════════════════════════════════════
-// LIVE SCORE TAB — 2 TABS (LIVE + RECENT) — isLive field
+// LIVE SCORE TAB — 2 TABS (LIVE + RECENT)
 // ═══════════════════════════════════════════════════════════
 class LiveScoreTab extends StatefulWidget {
   @override
@@ -209,17 +209,20 @@ class _LiveScoreTabState extends State<LiveScoreTab> {
                   ),
                 );
 
+              int now = DateTime.now().millisecondsSinceEpoch;
               var allMatches = snapshot.data!.docs;
 
-              // ─── isLive FIELD KE HISAAB SE FILTER ───
+              // ─── TIMESTAMP BASED: 6 DIN ───
               var liveMatches = allMatches.where((doc) {
                 var data = doc.data() as Map<String, dynamic>;
-                return data['isLive'] == true;
+                int t = data['timestamp'] ?? now;
+                return now - t < 518400000;
               }).toList();
 
               var recentMatches = allMatches.where((doc) {
                 var data = doc.data() as Map<String, dynamic>;
-                return data['isLive'] != true;
+                int t = data['timestamp'] ?? now;
+                return now - t >= 518400000;
               }).toList();
 
               var displayMatches =
@@ -781,7 +784,7 @@ class MatchDetailScreen extends StatelessWidget {
 }
 
 // ═══════════════════════════════════════════════════════════
-// NEWS TAB — WHITE BAR + LIGHT CREAM LIST — isArchived field
+// NEWS TAB — 2 TABS (LATEST + OLDER NEWS)
 // ═══════════════════════════════════════════════════════════
 class NewsTab extends StatefulWidget {
   @override
@@ -798,6 +801,7 @@ class _NewsTabState extends State<NewsTab> {
       backgroundColor: AppColors.newsBg,
       body: Column(
         children: [
+          // ─── LANGUAGE TOGGLE ───
           Container(
             padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             color: Colors.white,
@@ -844,6 +848,8 @@ class _NewsTabState extends State<NewsTab> {
               ],
             ),
           ),
+
+          // ─── NEWS TABS (LATEST + OLDER NEWS) ───
           Container(
             color: Colors.white,
             child: Row(
@@ -901,7 +907,7 @@ class _NewsTabState extends State<NewsTab> {
                       child: Text(
                         _selectedLanguage == 'ur'
                             ? "پرانی خبریں"
-                            : "ARCHIVED",
+                            : "OLDER NEWS", // ← YEH CHANGE KIYA
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: _newsTab == 1
@@ -921,6 +927,8 @@ class _NewsTabState extends State<NewsTab> {
               ],
             ),
           ),
+
+          // ─── NEWS LIST ───
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -954,21 +962,24 @@ class _NewsTabState extends State<NewsTab> {
                     ),
                   );
 
+                int now = DateTime.now().millisecondsSinceEpoch;
                 var allNews = snapshot.data!.docs;
 
-                // ─── isArchived FIELD KE HISAAB SE FILTER ───
+                // ─── TIMESTAMP BASED: 48 GHANTE ───
                 var latestNews = allNews.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
-                  return data['isArchived'] != true;
+                  int t = data['timestamp'] ?? now;
+                  return now - t < 172800000;
                 }).toList();
 
-                var archivedNews = allNews.where((doc) {
+                var olderNews = allNews.where((doc) {
                   var data = doc.data() as Map<String, dynamic>;
-                  return data['isArchived'] == true;
+                  int t = data['timestamp'] ?? now;
+                  return now - t >= 172800000;
                 }).toList();
 
                 var displayNews =
-                    _newsTab == 0 ? latestNews : archivedNews;
+                    _newsTab == 0 ? latestNews : olderNews;
 
                 if (displayNews.isEmpty) {
                   return Center(
@@ -979,7 +990,7 @@ class _NewsTabState extends State<NewsTab> {
                               : "No Latest News")
                           : (_selectedLanguage == 'ur'
                               ? "کوئی پرانی خبر نہیں"
-                              : "No Archived News"),
+                              : "No Older News"), // ← YEH CHANGE KIYA
                       style: TextStyle(
                         color: Colors.grey[600],
                         fontFamily: _selectedLanguage == 'ur'
@@ -1317,7 +1328,6 @@ class _PremiumTabState extends State<PremiumTab> {
                 ),
               ),
               SizedBox(height: 25),
-
               Text(
                 "Premium Features:",
                 style: TextStyle(
@@ -1327,7 +1337,6 @@ class _PremiumTabState extends State<PremiumTab> {
                 ),
               ),
               SizedBox(height: 15),
-
               _featureItem(Icons.block, "Ad-Free Experience",
                   "No ads while using the app"),
               _featureItem(Icons.speed, "Faster Loading",
@@ -1338,9 +1347,7 @@ class _PremiumTabState extends State<PremiumTab> {
                   "Get notified for your favorite teams"),
               _featureItem(Icons.download, "Offline Mode",
                   "Save news for offline reading"),
-
               SizedBox(height: 30),
-
               Container(
                 width: double.infinity,
                 padding: EdgeInsets.all(20),
