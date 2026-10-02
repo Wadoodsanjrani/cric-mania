@@ -537,6 +537,14 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     String team1 = m['team1'] ?? 'Team 1';
     String team2 = m['team2'] ?? 'Team 2';
 
+    List<dynamic> team1Bat = (m['team1Batting'] as List<dynamic>?) ?? <dynamic>[];
+    List<dynamic> team1Bowl = (m['team1Bowling'] as List<dynamic>?) ?? <dynamic>[];
+    List<dynamic> team2Bat = (m['team2Batting'] as List<dynamic>?) ?? <dynamic>[];
+    List<dynamic> team2Bowl = (m['team2Bowling'] as List<dynamic>?) ?? <dynamic>[];
+
+    String score1 = m['score1'] ?? '';
+    String score2 = m['score2'] ?? '';
+
     return ListView(
       padding: EdgeInsets.all(8),
       children: [
@@ -545,7 +553,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
             margin: EdgeInsets.only(bottom: 10),
             padding: EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: AppColors.accent.withOpacity(0.15),
+              color: AppColors.accent.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: AppColors.accent, width: 1),
             ),
@@ -572,7 +580,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
             margin: EdgeInsets.only(bottom: 10),
             padding: EdgeInsets.all(10),
             decoration: BoxDecoration(
-              color: Colors.amber.withOpacity(0.15),
+              color: Colors.amber.withValues(alpha: 0.15),
               borderRadius: BorderRadius.circular(10),
               border: Border.all(color: Colors.amber, width: 1),
             ),
@@ -615,14 +623,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
           _buildTestInnings(m, 'innings3', '3rd Innings'),
           _buildTestInnings(m, 'innings4', '4th Innings'),
         ] else ...[
-          List team1Bat = m['team1Batting'] ?? [];
-          List team1Bowl = m['team1Bowling'] ?? [];
-          List team2Bat = m['team2Batting'] ?? [];
-          List team2Bowl = m['team2Bowling'] ?? [];
-
-          String score1 = m['score1'] ?? '';
-          String score2 = m['score2'] ?? '';
-
           _scorecardSection("$team1 — $score1", team1Bat, team2Bowl),
           _scorecardSection("$team2 — $score2", team2Bat, team1Bowl),
         ],
@@ -634,12 +634,12 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     String team1 = m['team1'] ?? 'Team 1';
     String team2 = m['team2'] ?? 'Team 2';
 
-    List team1XI = m['team1PlayingXI'] ?? [];
-    List team2XI = m['team2PlayingXI'] ?? [];
-    List team1Bench = m['team1Bench'] ?? [];
-    List team2Bench = m['team2Bench'] ?? [];
-    List team1Staff = m['team1Staff'] ?? [];
-    List team2Staff = m['team2Staff'] ?? [];
+    List<dynamic> team1XI = (m['team1PlayingXI'] as List<dynamic>?) ?? <dynamic>[];
+    List<dynamic> team2XI = (m['team2PlayingXI'] as List<dynamic>?) ?? <dynamic>[];
+    List<dynamic> team1Bench = (m['team1Bench'] as List<dynamic>?) ?? <dynamic>[];
+    List<dynamic> team2Bench = (m['team2Bench'] as List<dynamic>?) ?? <dynamic>[];
+    List<dynamic> team1Staff = (m['team1Staff'] as List<dynamic>?) ?? <dynamic>[];
+    List<dynamic> team2Staff = (m['team2Staff'] as List<dynamic>?) ?? <dynamic>[];
 
     bool hasAny = team1XI.isNotEmpty ||
         team2XI.isNotEmpty ||
@@ -715,7 +715,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
   }
 
-  Widget _teamList(String teamName, dynamic players) {
+  Widget _teamList(String teamName, List<dynamic> players) {
     return Container(
       padding: EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -809,8 +809,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     }
 
     String battingTeam = innings['team'] ?? '';
-    List batting = innings['batting'] ?? [];
-    List bowling = innings['bowling'] ?? [];
+    List<dynamic> batting = (innings['batting'] as List<dynamic>?) ?? <dynamic>[];
+    List<dynamic> bowling = (innings['bowling'] as List<dynamic>?) ?? <dynamic>[];
 
     return _scorecardSection(
       "$battingTeam — $label",
@@ -819,7 +819,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
   }
 
-  Widget _scorecardSection(String title, dynamic batting, dynamic bowling) {
+  Widget _scorecardSection(String title, List<dynamic> batting, List<dynamic> bowling) {
     return Card(
       color: AppColors.cardBg,
       margin: EdgeInsets.only(bottom: 12),
@@ -863,7 +863,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
 
   Widget _battingHeader() => Container(
         decoration: BoxDecoration(
-          color: AppColors.darkBg.withOpacity(0.6),
+          color: AppColors.darkBg.withValues(alpha: 0.6),
           borderRadius: BorderRadius.only(
             topLeft: Radius.circular(8),
             topRight: Radius.circular(8),
@@ -1070,7 +1070,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   }
 
   Widget _bowlerHeader() => Container(
-        color: AppColors.darkBg.withOpacity(0.6),
+        color: AppColors.darkBg.withValues(alpha: 0.6),
         padding: EdgeInsets.symmetric(horizontal: 12, vertical: 8),
         margin: EdgeInsets.only(top: 10),
         child: Row(
