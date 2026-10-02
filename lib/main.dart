@@ -728,7 +728,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
   }
 
-  Widget _teamList(String teamName, var players) {
+  Widget _teamList(String teamName, dynamic players) {
     return Container(
       padding: EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -832,7 +832,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
   }
 
-  Widget _scorecardSection(String title, var batting, var bowling) {
+  Widget _scorecardSection(String title, dynamic batting, dynamic bowling) {
     return Card(
       color: AppColors.cardBg,
       margin: EdgeInsets.only(bottom: 12),
