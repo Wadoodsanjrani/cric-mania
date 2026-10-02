@@ -88,7 +88,7 @@ class LiveScoreTab extends StatefulWidget {
 }
 
 class _LiveScoreTabState extends State<LiveScoreTab> {
-  int _matchTab = 0; // 0 = LIVE, 1 = UPCOMING, 2 = RECENT
+  int _matchTab = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -98,7 +98,6 @@ class _LiveScoreTabState extends State<LiveScoreTab> {
           color: AppColors.cardBg,
           child: Row(
             children: [
-              // ─── LIVE ───
               Expanded(
                 child: GestureDetector(
                   onTap: () => setState(() => _matchTab = 0),
@@ -144,7 +143,6 @@ class _LiveScoreTabState extends State<LiveScoreTab> {
                   ),
                 ),
               ),
-              // ─── UPCOMING ───
               Expanded(
                 child: GestureDetector(
                   onTap: () => setState(() => _matchTab = 1),
@@ -187,7 +185,6 @@ class _LiveScoreTabState extends State<LiveScoreTab> {
                   ),
                 ),
               ),
-              // ─── RECENT ───
               Expanded(
                 child: GestureDetector(
                   onTap: () => setState(() => _matchTab = 2),
@@ -252,7 +249,6 @@ class _LiveScoreTabState extends State<LiveScoreTab> {
 
               var allMatches = snapshot.data!.docs;
 
-              // ─── STATUS BASED FILTER ───
               List<QueryDocumentSnapshot> displayMatches = [];
               if (_matchTab == 0) {
                 displayMatches = allMatches.where((doc) {
@@ -430,7 +426,7 @@ class MatchDetailScreen extends StatefulWidget {
 }
 
 class _MatchDetailScreenState extends State<MatchDetailScreen> {
-  int _detailTab = 0; // 0 = Scorecard, 1 = Playing XI
+  int _detailTab = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -465,7 +461,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
           ),
           body: Column(
             children: [
-              // ─── DETAIL TABS ───
               Container(
                 color: AppColors.cardBg,
                 child: Row(
@@ -531,7 +526,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                   ],
                 ),
               ),
-              // ─── TAB CONTENT ───
               Expanded(
                 child: _detailTab == 0
                     ? _buildScorecardTab(m)
@@ -544,9 +538,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════
-  // TAB 1: SCORECARD
-  // ═══════════════════════════════════════════════
   Widget _buildScorecardTab(Map<String, dynamic> m) {
     String format = (m['format'] ?? 'ODI').toString().toUpperCase();
     bool isTest = format == 'TEST';
@@ -557,7 +548,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     return ListView(
       padding: EdgeInsets.all(8),
       children: [
-        // ✅ TOSS BANNER
         if ((m['toss'] ?? "").toString().isNotEmpty)
           Container(
             margin: EdgeInsets.only(bottom: 10),
@@ -585,7 +575,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
             ),
           ),
 
-        // ✅ MAN OF THE MATCH
         if ((m['manOfTheMatch'] ?? "").toString().isNotEmpty)
           Container(
             margin: EdgeInsets.only(bottom: 10),
@@ -628,17 +617,16 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
             ),
           ),
 
-        // ─── INNINGS DATA ───
         if (isTest) ...[
           _buildTestInnings(m, 'innings1', '1st Innings'),
           _buildTestInnings(m, 'innings2', '2nd Innings'),
           _buildTestInnings(m, 'innings3', '3rd Innings'),
           _buildTestInnings(m, 'innings4', '4th Innings'),
         ] else ...[
-          List<dynamic> team1Bat = m['team1Batting'] ?? [];
-          List<dynamic> team1Bowl = m['team1Bowling'] ?? [];
-          List<dynamic> team2Bat = m['team2Batting'] ?? [];
-          List<dynamic> team2Bowl = m['team2Bowling'] ?? [];
+          var team1Bat = m['team1Batting'] ?? [];
+          var team1Bowl = m['team1Bowling'] ?? [];
+          var team2Bat = m['team2Batting'] ?? [];
+          var team2Bowl = m['team2Bowling'] ?? [];
 
           String score1 = m['score1'] ?? '';
           String score2 = m['score2'] ?? '';
@@ -650,19 +638,16 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════
-  // TAB 2: PLAYING XI (with Bench + Staff)
-  // ═══════════════════════════════════════════════
   Widget _buildPlayingXITab(Map<String, dynamic> m) {
     String team1 = m['team1'] ?? 'Team 1';
     String team2 = m['team2'] ?? 'Team 2';
 
-    List<dynamic> team1XI = m['team1PlayingXI'] ?? [];
-    List<dynamic> team2XI = m['team2PlayingXI'] ?? [];
-    List<dynamic> team1Bench = m['team1Bench'] ?? [];
-    List<dynamic> team2Bench = m['team2Bench'] ?? [];
-    List<dynamic> team1Staff = m['team1Staff'] ?? [];
-    List<dynamic> team2Staff = m['team2Staff'] ?? [];
+    var team1XI = m['team1PlayingXI'] ?? [];
+    var team2XI = m['team2PlayingXI'] ?? [];
+    var team1Bench = m['team1Bench'] ?? [];
+    var team2Bench = m['team2Bench'] ?? [];
+    var team1Staff = m['team1Staff'] ?? [];
+    var team2Staff = m['team2Staff'] ?? [];
 
     bool hasAny = team1XI.isNotEmpty ||
         team2XI.isNotEmpty ||
@@ -683,7 +668,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     return ListView(
       padding: EdgeInsets.all(10),
       children: [
-        // ─── PLAYING XI ───
         if (team1XI.isNotEmpty || team2XI.isNotEmpty) ...[
           _tabHeader("🏏 PLAYING XI"),
           Row(
@@ -698,7 +682,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
 
         SizedBox(height: 16),
 
-        // ─── BENCH ───
         if (team1Bench.isNotEmpty || team2Bench.isNotEmpty) ...[
           _tabHeader("🪑 BENCH"),
           Row(
@@ -713,7 +696,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
 
         SizedBox(height: 16),
 
-        // ─── STAFF ───
         if (team1Staff.isNotEmpty || team2Staff.isNotEmpty) ...[
           _tabHeader("👔 STAFF"),
           Row(
@@ -746,7 +728,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
   }
 
-  Widget _teamList(String teamName, List<dynamic> players) {
+  Widget _teamList(String teamName, var players) {
     return Container(
       padding: EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -815,7 +797,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
   }
 
-  // ─── TEST INNINGS BUILDER ───
   Widget _buildTestInnings(
       Map<String, dynamic> m, String inningsKey, String label) {
     Map<String, dynamic>? innings = m[inningsKey] as Map<String, dynamic>?;
@@ -841,8 +822,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     }
 
     String battingTeam = innings['team'] ?? '';
-    List<dynamic> batting = innings['batting'] ?? [];
-    List<dynamic> bowling = innings['bowling'] ?? [];
+    var batting = innings['batting'] ?? [];
+    var bowling = innings['bowling'] ?? [];
 
     return _scorecardSection(
       "$battingTeam — $label",
@@ -851,7 +832,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
   }
 
-  Widget _scorecardSection(String title, List<dynamic> batting, List<dynamic> bowling) {
+  Widget _scorecardSection(String title, var batting, var bowling) {
     return Card(
       color: AppColors.cardBg,
       margin: EdgeInsets.only(bottom: 12),
@@ -1238,7 +1219,6 @@ class _NewsTabState extends State<NewsTab> {
       backgroundColor: AppColors.newsBg,
       body: Column(
         children: [
-          // ─── LANGUAGE TOGGLE ───
           Container(
             padding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
             color: Colors.white,
@@ -1286,7 +1266,6 @@ class _NewsTabState extends State<NewsTab> {
             ),
           ),
 
-          // ─── NEWS TABS ───
           Container(
             color: Colors.white,
             child: Row(
@@ -1365,7 +1344,6 @@ class _NewsTabState extends State<NewsTab> {
             ),
           ),
 
-          // ─── NEWS LIST ───
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
