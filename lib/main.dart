@@ -4,7 +4,6 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 
-// ─── APP COLORS ───
 class AppColors {
   static const Color primary = Color(0xFF1A73E8);
   static const Color darkBg = Color(0xFF1B1B2F);
@@ -40,7 +39,6 @@ class CricManiaApp extends StatelessWidget {
   }
 }
 
-// ─── MAIN TABS ───
 class MainTabs extends StatefulWidget {
   @override
   _MainTabsState createState() => _MainTabsState();
@@ -79,9 +77,6 @@ class _MainTabsState extends State<MainTabs> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// LIVE SCORE TAB — 3 TABS (LIVE + UPCOMING + RECENT)
-// ═══════════════════════════════════════════════════════════
 class LiveScoreTab extends StatefulWidget {
   @override
   _LiveScoreTabState createState() => _LiveScoreTabState();
@@ -414,9 +409,6 @@ class _LiveScoreTabState extends State<LiveScoreTab> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// MATCH DETAIL SCREEN — 2 TABS (Scorecard + Playing XI)
-// ═══════════════════════════════════════════════════════════
 class MatchDetailScreen extends StatefulWidget {
   final String matchId;
   MatchDetailScreen({required this.matchId});
@@ -623,10 +615,10 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
           _buildTestInnings(m, 'innings3', '3rd Innings'),
           _buildTestInnings(m, 'innings4', '4th Innings'),
         ] else ...[
-          var team1Bat = m['team1Batting'] ?? [];
-          var team1Bowl = m['team1Bowling'] ?? [];
-          var team2Bat = m['team2Batting'] ?? [];
-          var team2Bowl = m['team2Bowling'] ?? [];
+          List team1Bat = m['team1Batting'] ?? [];
+          List team1Bowl = m['team1Bowling'] ?? [];
+          List team2Bat = m['team2Batting'] ?? [];
+          List team2Bowl = m['team2Bowling'] ?? [];
 
           String score1 = m['score1'] ?? '';
           String score2 = m['score2'] ?? '';
@@ -642,12 +634,12 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     String team1 = m['team1'] ?? 'Team 1';
     String team2 = m['team2'] ?? 'Team 2';
 
-    var team1XI = m['team1PlayingXI'] ?? [];
-    var team2XI = m['team2PlayingXI'] ?? [];
-    var team1Bench = m['team1Bench'] ?? [];
-    var team2Bench = m['team2Bench'] ?? [];
-    var team1Staff = m['team1Staff'] ?? [];
-    var team2Staff = m['team2Staff'] ?? [];
+    List team1XI = m['team1PlayingXI'] ?? [];
+    List team2XI = m['team2PlayingXI'] ?? [];
+    List team1Bench = m['team1Bench'] ?? [];
+    List team2Bench = m['team2Bench'] ?? [];
+    List team1Staff = m['team1Staff'] ?? [];
+    List team2Staff = m['team2Staff'] ?? [];
 
     bool hasAny = team1XI.isNotEmpty ||
         team2XI.isNotEmpty ||
@@ -679,9 +671,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
             ],
           ),
         ],
-
         SizedBox(height: 16),
-
         if (team1Bench.isNotEmpty || team2Bench.isNotEmpty) ...[
           _tabHeader("🪑 BENCH"),
           Row(
@@ -693,9 +683,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
             ],
           ),
         ],
-
         SizedBox(height: 16),
-
         if (team1Staff.isNotEmpty || team2Staff.isNotEmpty) ...[
           _tabHeader("👔 STAFF"),
           Row(
@@ -707,7 +695,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
             ],
           ),
         ],
-
         SizedBox(height: 20),
       ],
     );
@@ -822,8 +809,8 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     }
 
     String battingTeam = innings['team'] ?? '';
-    var batting = innings['batting'] ?? [];
-    var bowling = innings['bowling'] ?? [];
+    List batting = innings['batting'] ?? [];
+    List bowling = innings['bowling'] ?? [];
 
     return _scorecardSection(
       "$battingTeam — $label",
@@ -1201,9 +1188,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
   }
 }
 
-// ═══════════════════════════════════════════════════════════
-// NEWS TAB — 2 TABS (LATEST + OLDER NEWS)
-// ═══════════════════════════════════════════════════════════
 class NewsTab extends StatefulWidget {
   @override
   _NewsTabState createState() => _NewsTabState();
@@ -1265,7 +1249,6 @@ class _NewsTabState extends State<NewsTab> {
               ],
             ),
           ),
-
           Container(
             color: Colors.white,
             child: Row(
@@ -1343,7 +1326,6 @@ class _NewsTabState extends State<NewsTab> {
               ],
             ),
           ),
-
           Expanded(
             child: StreamBuilder<QuerySnapshot>(
               stream: FirebaseFirestore.instance
@@ -1559,7 +1541,6 @@ class _NewsTabState extends State<NewsTab> {
   }
 }
 
-// ─── NEWS DETAIL SCREEN ───
 class NewsDetailScreen extends StatelessWidget {
   final Map<String, dynamic> newsData;
   NewsDetailScreen({required this.newsData});
