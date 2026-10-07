@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
+import 'screens/pro_league/pro_league_home.dart';
+import 'screens/pro_league/pro_league_auth_gate.dart';   // ✅ NAYA IMPORT
 
 class AppColors {
   static const Color primary = Color(0xFF1A73E8);
@@ -46,7 +48,12 @@ class MainTabs extends StatefulWidget {
 
 class _MainTabsState extends State<MainTabs> {
   int _index = 0;
-  final List<Widget> _tabs = [LiveScoreTab(), NewsTab()];
+
+  final List<Widget> _tabs = [
+    LiveScoreTab(),
+    NewsTab(),
+    ProLeagueAuthGate(),   // ✅ UPDATE: ProLeagueHome() ki jagah
+  ];
 
   @override
   Widget build(BuildContext context) {
@@ -65,17 +72,29 @@ class _MainTabsState extends State<MainTabs> {
         selectedItemColor: AppColors.accent,
         unselectedItemColor: AppColors.textGrey,
         backgroundColor: AppColors.cardBg,
+        type: BottomNavigationBarType.fixed,
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.sports_cricket),
             label: "Live Score",
           ),
-          BottomNavigationBarItem(icon: Icon(Icons.newspaper), label: "News"),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.newspaper),
+            label: "News",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.emoji_events),
+            label: "Pro League",
+          ),
         ],
       ),
     );
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// LIVE SCORE TAB — BILKUL SAME (KOI CHANGE NAHI)
+// ═══════════════════════════════════════════════════════════════
 
 class LiveScoreTab extends StatefulWidget {
   @override
@@ -1187,6 +1206,10 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
   }
 }
+
+// ═══════════════════════════════════════════════════════════════
+// NEWS TAB — BILKUL SAME (KOI CHANGE NAHI)
+// ═══════════════════════════════════════════════════════════════
 
 class NewsTab extends StatefulWidget {
   @override
