@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'entry/entry_form_screen.dart';
 
 /// Tournament List Screen — Active tournaments from admin
 class TournamentListScreen extends StatefulWidget {
@@ -11,6 +13,7 @@ class TournamentListScreen extends StatefulWidget {
 
 class _TournamentListScreenState extends State<TournamentListScreen> {
   final _firestore = FirebaseFirestore.instance;
+  final _auth = FirebaseAuth.instance;
 
   @override
   Widget build(BuildContext context) {
@@ -83,7 +86,6 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
             );
           }
 
-          // Sort by startDate descending
           final sorted = docs.toList()
             ..sort((a, b) {
               final aDate = a.data()['startDate'] as Timestamp?;
@@ -110,6 +112,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
     final format = data['format'] ?? 'T20';
     final startDate = (data['startDate'] as Timestamp?)?.toDate();
     final endDate = (data['endDate'] as Timestamp?)?.toDate();
+    final deadline = (data['deadline'] as Timestamp?)?.toDate();
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -145,12 +148,14 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
             ],
           ),
           const SizedBox(height: 10),
-          Row(
+          Wrap(
+            spacing: 8,
+            runSpacing: 6,
             children: [
               _chip(format),
-              const SizedBox(width: 8),
-              if (startDate != null)
-                _chip('${_fmt(startDate)} - ${endDate != null ? _fmt(endDate) : ""}'),
+              if (startDate != null && endDate != null)
+                _chip('${_fmt(startDate)} - ${_fmt(endDate)}'),
+              if (deadline != null) _chip('Deadline: ${_fmt(deadline)}'),
             ],
           ),
           const SizedBox(height: 14),
@@ -162,13 +167,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
                 foregroundColor: Colors.black,
                 padding: const EdgeInsets.symmetric(vertical: 12),
               ),
-              onPressed: () {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Entry form — Coming Soon'),
-                  ),
-                );
-              },
+              onPressed: () => _onJoinTap(id, name),
               child: const Text(
                 'JOIN NOW',
                 style: TextStyle(
@@ -181,6 +180,70 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _onJoinTap(String tournamentId, String tournamentName) async {
+    final user = _auth.currentUser;
+
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please login first'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: Colors.white),
+      ),
+    );
+
+    try {
+      final squadDoc = await _firestore
+          .collection('tournaments')
+          .doc(tournamentId)
+          .collection('squads')
+          .doc(user.uid)
+          .get();
+
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      if (squadDoc.exists) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('You have already joined this tournament'),
+            backgroundColor: Color(0xFF00C9A7),
+          ),
+        );
+        return;
+      }
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => EntryFormScreen(
+            tournamentId: tournamentId,
+            tournamentName: tournamentName,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.pop(context);
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 
   Widget _chip(String text) {
@@ -201,6 +264,5 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
     );
   }
 
-  String _fmt(DateTime d) =>
-      '${d.day}/${d.month}/${d.year}';
+  String _fmt(DateTime d) => '${d.day}/${d.month}/${d.year}';
 }
