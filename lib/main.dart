@@ -3,8 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
-import 'screens/pro_league/pro_league_home.dart';
-import 'screens/pro_league/pro_league_auth_gate.dart';   // ✅ NAYA IMPORT
+import 'screens/pro_league/pro_league_auth_gate.dart';
 
 class AppColors {
   static const Color primary = Color(0xFF1A73E8);
@@ -52,7 +51,7 @@ class _MainTabsState extends State<MainTabs> {
   final List<Widget> _tabs = [
     LiveScoreTab(),
     NewsTab(),
-    ProLeagueAuthGate(),   // ✅ UPDATE: ProLeagueHome() ki jagah
+    ProLeagueAuthGate(),
   ];
 
   @override

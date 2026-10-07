@@ -1,6 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'rules_screen.dart';
 import '../tournament_list_screen.dart';
+import '../squad/my_squad_screen.dart';
+import '../leaderboard/leaderboard_screen.dart';
+import '../fpod/fpod_screen.dart';
+import '../winner/winner_screen.dart';
 
 class AppColors {
   static const Color primary = Color(0xFF1A73E8);
@@ -95,9 +101,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
                     title: "My Squad",
                     subtitle: "View your submitted squad",
                     color: AppColors.accent,
-                    onTap: () {
-                      _showComingSoon(context, "My Squad");
-                    },
+                    onTap: () => _openMySquad(context),
                   ),
                   SizedBox(height: 12),
                   _tile(
@@ -105,9 +109,23 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
                     title: "Leaderboard",
                     subtitle: "Check your rank and points",
                     color: Colors.orange,
-                    onTap: () {
-                      _showComingSoon(context, "Leaderboard");
-                    },
+                    onTap: () => _openLeaderboard(context),
+                  ),
+                  SizedBox(height: 12),
+                  _tile(
+                    icon: Icons.star,
+                    title: "PLP of the Day",
+                    subtitle: "See today's top performer",
+                    color: Colors.amber,
+                    onTap: () => _openFpod(context),
+                  ),
+                  SizedBox(height: 12),
+                  _tile(
+                    icon: Icons.emoji_events,
+                    title: "Winners",
+                    subtitle: "See tournament champions",
+                    color: Color(0xFFD4AF37),
+                    onTap: () => _openWinners(context),
                   ),
                   SizedBox(height: 12),
                   _tile(
@@ -198,6 +216,259 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
     );
   }
 
+  // ─── Open My Squad ───
+  Future<void> _openMySquad(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Please login first"),
+          backgroundColor: AppColors.accent,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      ),
+    );
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('tournaments')
+          .where('status', isEqualTo: 'active')
+          .limit(1)
+          .get();
+
+      if (!context.mounted) return;
+      Navigator.pop(context);
+
+      if (snap.docs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("No active tournament at the moment"),
+            backgroundColor: AppColors.accent,
+          ),
+        );
+        return;
+      }
+
+      final tourney = snap.docs.first;
+      final tourneyData = tourney.data();
+      final tourneyName = tourneyData['name'] ?? 'Tournament';
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => MySquadScreen(
+            tournamentId: tourney.id,
+            tournamentName: tourneyName,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    }
+  }
+
+  // ─── Open Leaderboard ───
+  Future<void> _openLeaderboard(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Please login first"),
+          backgroundColor: AppColors.accent,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      ),
+    );
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('tournaments')
+          .where('status', isEqualTo: 'active')
+          .limit(1)
+          .get();
+
+      if (!context.mounted) return;
+      Navigator.pop(context);
+
+      if (snap.docs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("No active tournament at the moment"),
+            backgroundColor: AppColors.accent,
+          ),
+        );
+        return;
+      }
+
+      final tourney = snap.docs.first;
+      final tourneyData = tourney.data();
+      final tourneyName = tourneyData['name'] ?? 'Tournament';
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => LeaderboardScreen(
+            tournamentId: tourney.id,
+            tournamentName: tourneyName,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    }
+  }
+
+  // ─── Open PLP of the Day ───
+  Future<void> _openFpod(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Please login first"),
+          backgroundColor: AppColors.accent,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      ),
+    );
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('tournaments')
+          .where('status', isEqualTo: 'active')
+          .limit(1)
+          .get();
+
+      if (!context.mounted) return;
+      Navigator.pop(context);
+
+      if (snap.docs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("No active tournament at the moment"),
+            backgroundColor: AppColors.accent,
+          ),
+        );
+        return;
+      }
+
+      final tourney = snap.docs.first;
+      final tourneyData = tourney.data();
+      final tourneyName = tourneyData['name'] ?? 'Tournament';
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FpodScreen(
+            tournamentId: tourney.id,
+            tournamentName: tourneyName,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    }
+  }
+
+  // ─── Open Winners ───
+  Future<void> _openWinners(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text("Please login first"),
+          backgroundColor: AppColors.accent,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      ),
+    );
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('tournaments')
+          .where('status', isEqualTo: 'completed')
+          .orderBy('endDate', descending: true)
+          .limit(1)
+          .get();
+
+      if (!context.mounted) return;
+      Navigator.pop(context);
+
+      if (snap.docs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text("No completed tournaments yet"),
+            backgroundColor: AppColors.accent,
+          ),
+        );
+        return;
+      }
+
+      final tourney = snap.docs.first;
+      final tourneyData = tourney.data();
+      final tourneyName = tourneyData['name'] ?? 'Tournament';
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => WinnerScreen(
+            tournamentId: tourney.id,
+            tournamentName: tourneyName,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    }
+  }
+
   Widget _tile({
     required IconData icon,
     required String title,
@@ -286,16 +557,6 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  void _showComingSoon(BuildContext context, String feature) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text("$feature — Coming Soon"),
-        backgroundColor: AppColors.accent,
-        duration: Duration(seconds: 2),
       ),
     );
   }

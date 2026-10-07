@@ -3,6 +3,13 @@
     <!-- INTERNET PERMISSION -->
     <uses-permission android:name="android.permission.INTERNET" />
     
+    <!-- GALLERY SAVE PERMISSIONS (Android 12 aur purane ke liye) -->
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
+    
+    <!-- GALLERY SAVE PERMISSIONS (Android 13+ ke liye) -->
+    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+    
     <application
         android:label="Cric Mania"
         android:name="${applicationName}"
