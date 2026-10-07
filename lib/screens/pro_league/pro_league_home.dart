@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'rules_screen.dart';
+import '../tournament_list_screen.dart';
 
 class AppColors {
   static const Color primary = Color(0xFF1A73E8);
@@ -12,8 +13,10 @@ class AppColors {
 }
 
 class ProLeagueHome extends StatefulWidget {
+  const ProLeagueHome({super.key});
+
   @override
-  _ProLeagueHomeState createState() => _ProLeagueHomeState();
+  State<ProLeagueHome> createState() => _ProLeagueHomeState();
 }
 
 class _ProLeagueHomeState extends State<ProLeagueHome> {
@@ -78,7 +81,12 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
                     subtitle: "View active tournaments and join",
                     color: Colors.amber,
                     onTap: () {
-                      _showComingSoon(context, "Tournaments");
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => const TournamentListScreen(),
+                        ),
+                      );
                     },
                   ),
                   SizedBox(height: 12),
