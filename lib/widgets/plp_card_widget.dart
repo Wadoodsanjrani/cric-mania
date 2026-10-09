@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 class PlpCardWidget extends StatelessWidget {
@@ -23,17 +24,40 @@ class PlpCardWidget extends StatelessWidget {
     this.sponsorLogoBase64 = '',
   });
 
+  // ✅ SAFE base64 decode — "data:image/jpeg;base64,..." prefix bhi handle karega
+  Uint8List? _safeDecode(String b64) {
+    if (b64.isEmpty) return null;
+    try {
+      String clean = b64;
+
+      // Agar "data:image/jpeg;base64," prefix hai to hata do
+      if (clean.contains(',')) {
+        clean = clean.split(',').last;
+      }
+
+      // Extra whitespace / newline hata do
+      clean = clean.replaceAll(RegExp(r'\s+'), '');
+
+      return base64Decode(clean);
+    } catch (e) {
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    final photoBytes = _safeDecode(photoBase64);
+    final sponsorBytes = _safeDecode(sponsorLogoBase64);
+
     return Container(
       width: 340,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: const LinearGradient(
           colors: [
-            Color(0xFF0D1B3E), // Deep blue
-            Color(0xFF1A1F3A), // Dark
-            Color(0xFF0A0E27), // Darkest
+            Color(0xFF0D1B3E),
+            Color(0xFF1A1F3A),
+            Color(0xFF0A0E27),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
@@ -70,7 +94,7 @@ class PlpCardWidget extends StatelessWidget {
                 Icon(Icons.emoji_events, color: Colors.black, size: 20),
                 SizedBox(width: 6),
                 Text(
-                  "PLP OF THE DAY",
+                  "PLP OF THE MATCH",
                   style: TextStyle(
                     color: Colors.black,
                     fontSize: 14,
@@ -101,9 +125,9 @@ class PlpCardWidget extends StatelessWidget {
               ],
             ),
             child: ClipOval(
-              child: photoBase64.isNotEmpty
+              child: photoBytes != null
                   ? Image.memory(
-                      base64Decode(photoBase64),
+                      photoBytes,
                       fit: BoxFit.cover,
                       errorBuilder: (c, e, s) => _defaultAvatar(),
                     )
@@ -111,26 +135,6 @@ class PlpCardWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 14),
-
-          // ─── RANK BADGE ───
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
-            decoration: BoxDecoration(
-              gradient: const LinearGradient(
-                colors: [Color(0xFFD4AF37), Color(0xFFFFD700)],
-              ),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Text(
-              "#$rank",
-              style: const TextStyle(
-                color: Colors.black,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
 
           // ─── NAME ───
           Text(
@@ -184,7 +188,7 @@ class PlpCardWidget extends StatelessWidget {
             child: Column(
               children: [
                 const Text(
-                  "TOTAL POINTS",
+                  "MATCH POINTS",
                   style: TextStyle(
                     color: Colors.black87,
                     fontSize: 10,
@@ -213,7 +217,7 @@ class PlpCardWidget extends StatelessWidget {
           ),
           const SizedBox(height: 14),
 
-          // ─── DATE ───
+          // ─── MATCH LABEL ───
           Text(
             date,
             style: const TextStyle(
@@ -242,7 +246,7 @@ class PlpCardWidget extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (sponsorLogoBase64.isNotEmpty)
+                  if (sponsorBytes != null)
                     Container(
                       width: 24,
                       height: 24,
@@ -250,7 +254,7 @@ class PlpCardWidget extends StatelessWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: Image.memory(
-                          base64Decode(sponsorLogoBase64),
+                          sponsorBytes,
                           fit: BoxFit.cover,
                           errorBuilder: (c, e, s) => const SizedBox(),
                         ),

@@ -7,6 +7,7 @@ import '../squad/my_squad_screen.dart';
 import '../leaderboard/leaderboard_screen.dart';
 import '../fpod/fpod_screen.dart';
 import '../winner/winner_screen.dart';
+import '../prize/prize_screen.dart';
 
 class AppColors {
   static const Color primary = Color(0xFF1A73E8);
@@ -36,8 +37,9 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
             // ─── HEADER ───
             Container(
               width: double.infinity,
-              padding: EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              decoration: BoxDecoration(
+              padding: const EdgeInsets.symmetric(
+                  vertical: 24, horizontal: 16),
+              decoration: const BoxDecoration(
                 gradient: LinearGradient(
                   colors: [AppColors.primary, Color(0xFF0D47A1)],
                   begin: Alignment.topLeft,
@@ -47,7 +49,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Row(
+                  const Row(
                     children: [
                       Icon(Icons.emoji_events,
                           color: Colors.amber, size: 32),
@@ -64,8 +66,8 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 8),
-                  Text(
+                  const SizedBox(height: 8),
+                  const Text(
                     "Free skill-based cricket contest. Win exciting physical gifts!",
                     style: TextStyle(
                       color: Colors.white70,
@@ -78,7 +80,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
 
             // ─── TILES ───
             Padding(
-              padding: EdgeInsets.all(16),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 children: [
                   _tile(
@@ -95,7 +97,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
                       );
                     },
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   _tile(
                     icon: Icons.groups,
                     title: "My Squad",
@@ -103,7 +105,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
                     color: AppColors.accent,
                     onTap: () => _openMySquad(context),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   _tile(
                     icon: Icons.leaderboard,
                     title: "Leaderboard",
@@ -111,23 +113,32 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
                     color: Colors.orange,
                     onTap: () => _openLeaderboard(context),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   _tile(
                     icon: Icons.star,
-                    title: "PLP of the Day",
-                    subtitle: "See today's top performer",
+                    title: "PLP of the Match",
+                    subtitle: "See latest top performer",
                     color: Colors.amber,
                     onTap: () => _openFpod(context),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
+                  // ─── NAYA TILE: REWARDS ───
+                  _tile(
+                    icon: Icons.card_giftcard,
+                    title: "Rewards",
+                    subtitle: "See tournament prizes",
+                    color: const Color(0xFFD4AF37),
+                    onTap: () => _openPrizes(context),
+                  ),
+                  const SizedBox(height: 12),
                   _tile(
                     icon: Icons.emoji_events,
                     title: "Winners",
                     subtitle: "See tournament champions",
-                    color: Color(0xFFD4AF37),
+                    color: const Color(0xFFD4AF37),
                     onTap: () => _openWinners(context),
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   _tile(
                     icon: Icons.menu_book,
                     title: "Rules",
@@ -142,12 +153,12 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
                       );
                     },
                   ),
-                  SizedBox(height: 24),
+                  const SizedBox(height: 24),
 
                   // ─── INFO CARD ───
                   Container(
                     width: double.infinity,
-                    padding: EdgeInsets.all(16),
+                    padding: const EdgeInsets.all(16),
                     decoration: BoxDecoration(
                       color: AppColors.cardBg,
                       borderRadius: BorderRadius.circular(12),
@@ -159,7 +170,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Row(
+                        const Row(
                           children: [
                             Icon(Icons.info_outline,
                                 color: AppColors.accent, size: 20),
@@ -174,19 +185,20 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
                             ),
                           ],
                         ),
-                        SizedBox(height: 12),
+                        const SizedBox(height: 12),
                         _bullet("Join an active tournament"),
                         _bullet("Create your squad (5 players per team)"),
                         _bullet("Earn points based on player performance"),
                         _bullet("Climb the leaderboard and win gifts"),
-                        SizedBox(height: 8),
+                        const SizedBox(height: 8),
                         Container(
-                          padding: EdgeInsets.all(10),
+                          padding: const EdgeInsets.all(10),
                           decoration: BoxDecoration(
-                            color: AppColors.accent.withValues(alpha: 0.15),
+                            color:
+                                AppColors.accent.withValues(alpha: 0.15),
                             borderRadius: BorderRadius.circular(8),
                           ),
-                          child: Row(
+                          child: const Row(
                             children: [
                               Icon(Icons.verified,
                                   color: AppColors.accent, size: 18),
@@ -207,6 +219,39 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
                       ],
                     ),
                   ),
+
+                  const SizedBox(height: 16),
+
+                  // ─── SHORT DISCLAIMER ───
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: AppColors.cardBg,
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: const Color(0xFFD4AF37)
+                            .withValues(alpha: 0.3),
+                      ),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.warning_amber_rounded,
+                            color: Color(0xFFD4AF37), size: 18),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            "100% skill-based. We do NOT accept any fees or payments.",
+                            style: TextStyle(
+                              color: Color(0xFFD4AF37),
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
@@ -216,12 +261,12 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
     );
   }
 
-  // ─── Open My Squad ───
-  Future<void> _openMySquad(BuildContext context) async {
+  // ─── Open Rewards ───
+  Future<void> _openPrizes(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text("Please login first"),
           backgroundColor: AppColors.accent,
         ),
@@ -232,7 +277,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(
+      builder: (_) => const Center(
         child: CircularProgressIndicator(color: AppColors.accent),
       ),
     );
@@ -249,7 +294,70 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
 
       if (snap.docs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
+            content: Text("No active tournament at the moment"),
+            backgroundColor: AppColors.accent,
+          ),
+        );
+        return;
+      }
+
+      final tourney = snap.docs.first;
+      final tourneyData = tourney.data();
+      final tourneyName = tourneyData['name'] ?? 'Tournament';
+
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => PrizeScreen(
+            tournamentId: tourney.id,
+            tournamentName: tourneyName,
+          ),
+        ),
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      Navigator.pop(context);
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e")),
+      );
+    }
+  }
+
+  // ─── Open My Squad ───
+  Future<void> _openMySquad(BuildContext context) async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Please login first"),
+          backgroundColor: AppColors.accent,
+        ),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) => const Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      ),
+    );
+
+    try {
+      final snap = await FirebaseFirestore.instance
+          .collection('tournaments')
+          .where('status', isEqualTo: 'active')
+          .limit(1)
+          .get();
+
+      if (!context.mounted) return;
+      Navigator.pop(context);
+
+      if (snap.docs.isEmpty) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
             content: Text("No active tournament at the moment"),
             backgroundColor: AppColors.accent,
           ),
@@ -284,7 +392,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text("Please login first"),
           backgroundColor: AppColors.accent,
         ),
@@ -295,7 +403,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(
+      builder: (_) => const Center(
         child: CircularProgressIndicator(color: AppColors.accent),
       ),
     );
@@ -312,7 +420,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
 
       if (snap.docs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text("No active tournament at the moment"),
             backgroundColor: AppColors.accent,
           ),
@@ -342,12 +450,12 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
     }
   }
 
-  // ─── Open PLP of the Day ───
+  // ─── Open PLP ───
   Future<void> _openFpod(BuildContext context) async {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text("Please login first"),
           backgroundColor: AppColors.accent,
         ),
@@ -358,7 +466,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(
+      builder: (_) => const Center(
         child: CircularProgressIndicator(color: AppColors.accent),
       ),
     );
@@ -375,7 +483,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
 
       if (snap.docs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text("No active tournament at the moment"),
             backgroundColor: AppColors.accent,
           ),
@@ -410,7 +518,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
     final user = FirebaseAuth.instance.currentUser;
     if (user == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
+        const SnackBar(
           content: Text("Please login first"),
           backgroundColor: AppColors.accent,
         ),
@@ -421,7 +529,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (_) => Center(
+      builder: (_) => const Center(
         child: CircularProgressIndicator(color: AppColors.accent),
       ),
     );
@@ -439,7 +547,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
 
       if (snap.docs.isEmpty) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text("No completed tournaments yet"),
             backgroundColor: AppColors.accent,
           ),
@@ -480,7 +588,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
       onTap: onTap,
       borderRadius: BorderRadius.circular(12),
       child: Container(
-        padding: EdgeInsets.all(16),
+        padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: AppColors.cardBg,
           borderRadius: BorderRadius.circular(12),
@@ -489,30 +597,30 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
         child: Row(
           children: [
             Container(
-              padding: EdgeInsets.all(12),
+              padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
                 color: color.withValues(alpha: 0.15),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: color, size: 26),
             ),
-            SizedBox(width: 14),
+            const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     title,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textLight,
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  SizedBox(height: 3),
+                  const SizedBox(height: 3),
                   Text(
                     subtitle,
-                    style: TextStyle(
+                    style: const TextStyle(
                       color: AppColors.textGrey,
                       fontSize: 12,
                     ),
@@ -520,7 +628,7 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios,
+            const Icon(Icons.arrow_forward_ios,
                 color: AppColors.textGrey, size: 16),
           ],
         ),
@@ -530,26 +638,26 @@ class _ProLeagueHomeState extends State<ProLeagueHome> {
 
   Widget _bullet(String text) {
     return Padding(
-      padding: EdgeInsets.only(bottom: 6),
+      padding: const EdgeInsets.only(bottom: 6),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Padding(
-            padding: EdgeInsets.only(top: 6),
+            padding: const EdgeInsets.only(top: 6),
             child: Container(
               width: 6,
               height: 6,
-              decoration: BoxDecoration(
+              decoration: const BoxDecoration(
                 color: AppColors.accent,
                 shape: BoxShape.circle,
               ),
             ),
           ),
-          SizedBox(width: 10),
+          const SizedBox(width: 10),
           Expanded(
             child: Text(
               text,
-              style: TextStyle(
+              style: const TextStyle(
                 color: AppColors.textLight,
                 fontSize: 13,
                 height: 1.4,

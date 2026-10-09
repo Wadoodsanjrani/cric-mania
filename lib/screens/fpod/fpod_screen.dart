@@ -1,11 +1,13 @@
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:screenshot/screenshot.dart';
 import 'package:share_plus/share_plus.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../widgets/plp_card_widget.dart';
 
 class FpodScreen extends StatefulWidget {
@@ -27,14 +29,6 @@ class _FpodScreenState extends State<FpodScreen> {
   final _cardKey = GlobalKey();
   bool _downloading = false;
 
-  String _todayKey() {
-    final now = DateTime.now();
-    final y = now.year.toString();
-    final m = now.month.toString().padLeft(2, '0');
-    final d = now.day.toString().padLeft(2, '0');
-    return "$y-$m-$d";
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -45,7 +39,7 @@ class _FpodScreenState extends State<FpodScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "PLP of the Day",
+              "PLP of the Match",
               style: TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
@@ -54,10 +48,7 @@ class _FpodScreenState extends State<FpodScreen> {
             ),
             Text(
               widget.tournamentName,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ],
         ),
@@ -68,9 +59,9 @@ class _FpodScreenState extends State<FpodScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _sectionTitle("Today's PLP"),
+            _sectionTitle("Latest PLP"),
             const SizedBox(height: 12),
-            _todayCard(),
+            _latestCard(),
             const SizedBox(height: 24),
             _sectionTitle("Previous PLPs"),
             const SizedBox(height: 10),
@@ -81,35 +72,45 @@ class _FpodScreenState extends State<FpodScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // TODAY'S CARD
-  // ═══════════════════════════════════════════════════════════
-  Widget _todayCard() {
-    return StreamBuilder<DocumentSnapshot>(
+  Widget _latestCard() {
+    return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('tournaments')
           .doc(widget.tournamentId)
           .collection('fpod')
-          .doc(_todayKey())
+          .orderBy('calculatedAt', descending: true)
+          .limit(1)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return _loadingBox();
         }
-
-        if (!snapshot.hasData || !snapshot.data!.exists) {
+        if (snapshot.hasError) {
+          return Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2D2D44),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(color: Colors.red, width: 1),
+            ),
+            child: Text(
+              'ERROR: ${snapshot.error}',
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          );
+        }
+        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _emptyCard();
         }
 
-        final fpod = snapshot.data!.data() as Map<String, dynamic>;
-        final userId = fpod['userId'] ?? '';
-        final points = fpod['points'] ?? 0;
-        final rank = fpod['rank'] ?? 1;
-        final date = fpod['date'] ?? _todayKey();
+        final doc = snapshot.data!.docs.first;
+        final fpod = doc.data() as Map<String, dynamic>;
+        final userId = (fpod['userId'] ?? '').toString();
+        final points = (fpod['points'] ?? 0) as int;
+        final matchNumber = (fpod['matchNumber'] ?? '').toString();
+        final matchId = (fpod['matchId'] ?? doc.id).toString();
 
-        if (userId.isEmpty) {
-          return _emptyCard();
-        }
+        if (userId.isEmpty) return _emptyCard();
 
         return FutureBuilder<DocumentSnapshot>(
           future: FirebaseFirestore.instance
@@ -120,7 +121,15 @@ class _FpodScreenState extends State<FpodScreen> {
             if (userSnap.connectionState == ConnectionState.waiting) {
               return _loadingBox();
             }
-
+            if (userSnap.hasError) {
+              return Container(
+                padding: const EdgeInsets.all(20),
+                child: Text(
+                  'USER ERROR: ${userSnap.error}',
+                  style: const TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              );
+            }
             if (!userSnap.hasData || !userSnap.data!.exists) {
               return _emptyCard();
             }
@@ -135,8 +144,8 @@ class _FpodScreenState extends State<FpodScreen> {
               city: city,
               photoBase64: photoBase64,
               points: points,
-              rank: rank,
-              date: date,
+              matchNumber: matchNumber,
+              matchId: matchId,
             );
           },
         );
@@ -144,16 +153,13 @@ class _FpodScreenState extends State<FpodScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // WITH SPONSOR + DOWNLOAD + SHARE
-  // ═══════════════════════════════════════════════════════════
   Widget _withSponsorAndButtons({
     required String name,
     required String city,
     required String photoBase64,
     required int points,
-    required int rank,
-    required String date,
+    required String matchNumber,
+    required String matchId,
   }) {
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -172,6 +178,8 @@ class _FpodScreenState extends State<FpodScreen> {
           sponsorLogoBase64 = data['fpodSponsorLogoBase64'] ?? '';
         }
 
+        final label = matchNumber.isEmpty ? 'Match' : 'Match $matchNumber';
+
         return Column(
           children: [
             Screenshot(
@@ -183,8 +191,8 @@ class _FpodScreenState extends State<FpodScreen> {
                   userCity: city,
                   photoBase64: photoBase64,
                   points: points,
-                  rank: rank,
-                  date: date,
+                  rank: 0,
+                  date: label,
                   sponsorName: sponsorName,
                   sponsorLogoBase64: sponsorLogoBase64,
                 ),
@@ -200,7 +208,7 @@ class _FpodScreenState extends State<FpodScreen> {
                     color: const Color(0xFF00C9A7),
                     onTap: _downloading
                         ? null
-                        : () => _downloadCard(name, date),
+                        : () => _downloadCard(name, matchId),
                   ),
                 ),
                 const SizedBox(width: 10),
@@ -209,7 +217,7 @@ class _FpodScreenState extends State<FpodScreen> {
                     icon: Icons.share,
                     label: "Share",
                     color: const Color(0xFF1A73E8),
-                    onTap: () => _shareCard(name, date),
+                    onTap: () => _shareCard(name, matchId, label),
                   ),
                 ),
               ],
@@ -220,15 +228,36 @@ class _FpodScreenState extends State<FpodScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // DOWNLOAD CARD AS PNG
-  // ═══════════════════════════════════════════════════════════
-  Future<void> _downloadCard(String name, String date) async {
+  // ✅ DOWNLOAD — permission maangta hai, phir gallery mein save karta hai
+  Future<void> _downloadCard(String name, String matchId) async {
     setState(() => _downloading = true);
 
     try {
+      // Android ke liye permission maango
+      if (Platform.isAndroid) {
+        PermissionStatus status;
+        if (await Permission.photos.isGranted ||
+            await Permission.storage.isGranted) {
+          status = PermissionStatus.granted;
+        } else {
+          final photos = await Permission.photos.request();
+          if (photos.isGranted) {
+            status = photos;
+          } else {
+            status = await Permission.storage.request();
+          }
+        }
+
+        if (!status.isGranted) {
+          _snack("Gallery permission required", isError: true);
+          if (mounted) setState(() => _downloading = false);
+          return;
+        }
+      }
+
+      // Capture card
       final image = await _screenshotController.capture(
-        delay: const Duration(milliseconds: 100),
+        delay: const Duration(milliseconds: 300),
         pixelRatio: 3.0,
       );
 
@@ -238,8 +267,9 @@ class _FpodScreenState extends State<FpodScreen> {
 
       final cleanName =
           name.replaceAll(RegExp(r'[^\w\s]'), '').replaceAll(' ', '_');
-      final fileName = "PLP_${date}_$cleanName.png";
+      final fileName = "PLP_${matchId}_$cleanName";
 
+      // Gallery mein save karo
       if (Platform.isAndroid || Platform.isIOS) {
         final result = await ImageGallerySaverPlus.saveImage(
           image,
@@ -250,11 +280,11 @@ class _FpodScreenState extends State<FpodScreen> {
         if (result != null) {
           _snack("Card saved to gallery!");
         } else {
-          _snack("Failed to save", isError: true);
+          _snack("Failed to save to gallery", isError: true);
         }
       } else {
         final dir = await getTemporaryDirectory();
-        final file = File('${dir.path}/$fileName');
+        final file = File('${dir.path}/$fileName.png');
         await file.writeAsBytes(image);
         _snack("Card saved temporarily");
       }
@@ -265,46 +295,37 @@ class _FpodScreenState extends State<FpodScreen> {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // SHARE CARD
-  // ═══════════════════════════════════════════════════════════
-  Future<void> _shareCard(String name, String date) async {
+  Future<void> _shareCard(String name, String matchId, String label) async {
     try {
       final image = await _screenshotController.capture(
         delay: const Duration(milliseconds: 100),
         pixelRatio: 3.0,
       );
-
-      if (image == null) {
-        throw Exception("Failed to capture");
-      }
+      if (image == null) throw Exception("Failed to capture");
 
       final dir = await getTemporaryDirectory();
       final cleanName =
           name.replaceAll(RegExp(r'[^\w\s]'), '').replaceAll(' ', '_');
-      final fileName = "PLP_${date}_$cleanName.png";
+      final fileName = "PLP_${matchId}_$cleanName.png";
       final file = File('${dir.path}/$fileName');
       await file.writeAsBytes(image);
 
       await Share.shareXFiles(
         [XFile(file.path)],
-        text: "$name is the PLP of the Day! 🏆\n$date\n#CricMania #ProLeague",
+        text: "$name is the PLP of $label! 🏏\n#CricMania #ProLeague",
       );
     } catch (e) {
       _snack("Error: $e", isError: true);
     }
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // PREVIOUS PLPs LIST
-  // ═══════════════════════════════════════════════════════════
   Widget _previousList() {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('tournaments')
           .doc(widget.tournamentId)
           .collection('fpod')
-          .orderBy('date', descending: true)
+          .orderBy('calculatedAt', descending: true)
           .limit(15)
           .snapshots(),
       builder: (context, snapshot) {
@@ -316,18 +337,21 @@ class _FpodScreenState extends State<FpodScreen> {
             ),
           );
         }
-
+        if (snapshot.hasError) {
+          return Padding(
+            padding: const EdgeInsets.all(20),
+            child: Text(
+              'PREV ERROR: ${snapshot.error}',
+              style: const TextStyle(color: Colors.red, fontSize: 12),
+            ),
+          );
+        }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
           return _noPrevious();
         }
 
-        final today = _todayKey();
-        final previous =
-            snapshot.data!.docs.where((doc) => doc.id != today).toList();
-
-        if (previous.isEmpty) {
-          return _noPrevious();
-        }
+        final previous = snapshot.data!.docs.skip(1).toList();
+        if (previous.isEmpty) return _noPrevious();
 
         return Column(
           children: previous.map((doc) {
@@ -340,15 +364,14 @@ class _FpodScreenState extends State<FpodScreen> {
   }
 
   Widget _previousRow(Map<String, dynamic> data) {
-    final userId = data['userId'] ?? '';
-    final points = data['points'] ?? 0;
-    final date = data['date'] ?? '';
+    final userId = (data['userId'] ?? '').toString();
+    final points = (data['points'] ?? 0) as int;
+    final matchNumber = (data['matchNumber'] ?? '').toString();
+    final label = matchNumber.isEmpty ? 'Match' : 'Match $matchNumber';
 
     return FutureBuilder<DocumentSnapshot>(
-      future: FirebaseFirestore.instance
-          .collection('users')
-          .doc(userId)
-          .get(),
+      future:
+          FirebaseFirestore.instance.collection('users').doc(userId).get(),
       builder: (context, snap) {
         String name = 'Player';
         String city = '';
@@ -359,6 +382,16 @@ class _FpodScreenState extends State<FpodScreen> {
           name = user['name'] ?? 'Player';
           city = user['city'] ?? '';
           photoBase64 = user['profilePhotoBase64'] ?? '';
+        }
+
+        Uint8List? photoBytes;
+        if (photoBase64.isNotEmpty) {
+          try {
+            String clean = photoBase64;
+            if (clean.contains(',')) clean = clean.split(',').last;
+            clean = clean.replaceAll(RegExp(r'\s+'), '');
+            photoBytes = base64Decode(clean);
+          } catch (_) {}
         }
 
         return Container(
@@ -377,14 +410,12 @@ class _FpodScreenState extends State<FpodScreen> {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   border: Border.all(
-                    color: const Color(0xFFD4AF37),
-                    width: 2,
-                  ),
+                      color: const Color(0xFFD4AF37), width: 2),
                 ),
                 child: ClipOval(
-                  child: photoBase64.isNotEmpty
+                  child: photoBytes != null
                       ? Image.memory(
-                          base64Decode(photoBase64),
+                          photoBytes,
                           fit: BoxFit.cover,
                           errorBuilder: (c, e, s) => _smallAvatar(),
                         )
@@ -412,32 +443,24 @@ class _FpodScreenState extends State<FpodScreen> {
                           const Icon(Icons.location_on,
                               color: Color(0xFF9E9E9E), size: 11),
                           const SizedBox(width: 3),
-                          Text(
-                            city,
-                            style: const TextStyle(
-                              color: Color(0xFF9E9E9E),
-                              fontSize: 11,
-                            ),
-                          ),
+                          Text(city,
+                              style: const TextStyle(
+                                  color: Color(0xFF9E9E9E),
+                                  fontSize: 11)),
                           const SizedBox(width: 8),
                         ],
-                        Text(
-                          date,
-                          style: const TextStyle(
-                            color: Color(0xFF9E9E9E),
-                            fontSize: 11,
-                          ),
-                        ),
+                        Text(label,
+                            style: const TextStyle(
+                                color: Color(0xFF9E9E9E),
+                                fontSize: 11)),
                       ],
                     ),
                   ],
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 10,
-                  vertical: 6,
-                ),
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
                 decoration: BoxDecoration(
                   color: const Color(0xFFD4AF37).withValues(alpha: 0.15),
                   borderRadius: BorderRadius.circular(8),
@@ -465,9 +488,6 @@ class _FpodScreenState extends State<FpodScreen> {
     );
   }
 
-  // ═══════════════════════════════════════════════════════════
-  // HELPERS
-  // ═══════════════════════════════════════════════════════════
   Widget _smallAvatar() {
     return Container(
       color: const Color(0xFF1B1B2F),
@@ -535,7 +555,7 @@ class _FpodScreenState extends State<FpodScreen> {
           ),
           const SizedBox(height: 6),
           Text(
-            "PLP for today will be announced after matches.",
+            "PLP of the Match will be announced after the match.",
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.grey[500], fontSize: 13),
           ),

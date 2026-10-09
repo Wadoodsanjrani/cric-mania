@@ -54,7 +54,7 @@ class _RulesScreenState extends State<RulesScreen> {
       "content":
           "Under Pakistan and Indian Supreme Court rule: Game of Skill is NOT Gambling.\n\n"
           "Game of Chance = Win by luck (Ludo, Roulette, Lucky Draw) - This is gambling.\n\n"
-          "Game of Skill = Win by knowledge (Chess, Fantasy Cricket, Our Pro League) - This is NOT gambling.\n\n"
+          "Game of Skill = Win by knowledge (Chess, Cricket Knowledge Games, Our Pro League) - This is NOT gambling.\n\n"
           "In Cric Mania Pro League, you win by using your cricket knowledge like player form, pitch report, and team analysis. It is a Game of Skill. So it is legal.",
     },
     {

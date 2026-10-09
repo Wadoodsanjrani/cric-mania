@@ -1,6 +1,13 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:share_plus/share_plus.dart';
+import 'package:path_provider/path_provider.dart';
+import 'package:image_gallery_saver_plus/image_gallery_saver_plus.dart';
+import 'package:permission_handler/permission_handler.dart';
 import '../../widgets/winner_card_widget.dart';
 
 class WinnerScreen extends StatefulWidget {
@@ -18,6 +25,47 @@ class WinnerScreen extends StatefulWidget {
 }
 
 class _WinnerScreenState extends State<WinnerScreen> {
+  final Map<int, GlobalKey> _cardKeys = {};
+  int? _downloadingRank;
+
+  GlobalKey _getKey(int rank) {
+    return _cardKeys.putIfAbsent(rank, () => GlobalKey());
+  }
+
+  // ✅ RepaintBoundary se image nikalo — zyada reliable
+  Future<Uint8List?> _captureCard(int rank) async {
+    try {
+      // Wait for render
+      await Future.delayed(const Duration(milliseconds: 300));
+
+      final key = _getKey(rank);
+      final boundary = key.currentContext?.findRenderObject()
+          as RenderRepaintBoundary?;
+
+      if (boundary == null) {
+        debugPrint('Boundary null for rank $rank');
+        return null;
+      }
+
+      // Wait for next frame
+      await Future.delayed(const Duration(milliseconds: 100));
+
+      final image = await boundary.toImage(pixelRatio: 2.5);
+      final byteData =
+          await image.toByteData(format: ui.ImageByteFormat.png);
+
+      if (byteData == null) {
+        debugPrint('ByteData null for rank $rank');
+        return null;
+      }
+
+      return byteData.buffer.asUint8List();
+    } catch (e) {
+      debugPrint('Capture error for rank $rank: $e');
+      return null;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -37,10 +85,7 @@ class _WinnerScreenState extends State<WinnerScreen> {
             ),
             Text(
               widget.tournamentName,
-              style: const TextStyle(
-                color: Colors.white70,
-                fontSize: 12,
-              ),
+              style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
           ],
         ),
@@ -98,7 +143,6 @@ class _WinnerScreenState extends State<WinnerScreen> {
     );
   }
 
-  // ─── Load Winners Info ───
   Future<List<Map<String, dynamic>>> _loadWinners(
     String firstId,
     String secondId,
@@ -108,15 +152,12 @@ class _WinnerScreenState extends State<WinnerScreen> {
 
     Future<void> addWinner(String userId, int rank) async {
       if (userId.isEmpty) return;
-
       try {
         final userDoc = await FirebaseFirestore.instance
             .collection('users')
             .doc(userId)
             .get();
-
         if (!userDoc.exists) return;
-
         final user = userDoc.data()!;
 
         final lbDoc = await FirebaseFirestore.instance
@@ -137,7 +178,7 @@ class _WinnerScreenState extends State<WinnerScreen> {
           'points': points,
         });
       } catch (e) {
-        // Skip
+        // skip
       }
     }
 
@@ -148,7 +189,6 @@ class _WinnerScreenState extends State<WinnerScreen> {
     return winners;
   }
 
-  // ─── Winners View ───
   Widget _winnersView(List<Map<String, dynamic>> winners) {
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -171,7 +211,6 @@ class _WinnerScreenState extends State<WinnerScreen> {
           padding: const EdgeInsets.all(16),
           child: Column(
             children: [
-              // ─── HEADER ───
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(16),
@@ -209,24 +248,48 @@ class _WinnerScreenState extends State<WinnerScreen> {
               ),
               const SizedBox(height: 24),
 
-              // ─── WINNER CARDS ───
               ...winners.map((winner) {
+                final rank = winner['rank'] as int;
                 return Padding(
                   padding: const EdgeInsets.only(bottom: 24),
                   child: Column(
                     children: [
-                      WinnerCardWidget(
-                        userName: winner['name'],
-                        userCity: winner['city'],
-                        photoBase64: winner['photoBase64'],
-                        points: winner['points'],
-                        rank: winner['rank'],
-                        tournamentName: widget.tournamentName,
-                        sponsorName: sponsorName,
-                        sponsorLogoBase64: sponsorLogoBase64,
+                      RepaintBoundary(
+                        key: _getKey(rank),
+                        child: WinnerCardWidget(
+                          userName: winner['name'],
+                          userCity: winner['city'],
+                          photoBase64: winner['photoBase64'],
+                          points: winner['points'],
+                          rank: rank,
+                          tournamentName: widget.tournamentName,
+                          sponsorName: sponsorName,
+                          sponsorLogoBase64: sponsorLogoBase64,
+                        ),
                       ),
                       const SizedBox(height: 10),
-                      _shareButton(winner),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _actionButton(
+                            icon: Icons.download,
+                            label: _downloadingRank == rank
+                                ? "Downloading..."
+                                : "Download",
+                            color: const Color(0xFF00C9A7),
+                            onTap: _downloadingRank == rank
+                                ? null
+                                : () => _downloadCard(rank, winner),
+                          ),
+                          const SizedBox(width: 10),
+                          _actionButton(
+                            icon: Icons.share,
+                            label: "Share",
+                            color: const Color(0xFF1A73E8),
+                            onTap: () => _shareWinner(rank, winner),
+                          ),
+                        ],
+                      ),
                     ],
                   ),
                 );
@@ -234,7 +297,6 @@ class _WinnerScreenState extends State<WinnerScreen> {
 
               const SizedBox(height: 20),
 
-              // ─── FOOTER ───
               Container(
                 padding: const EdgeInsets.all(14),
                 decoration: BoxDecoration(
@@ -266,30 +328,34 @@ class _WinnerScreenState extends State<WinnerScreen> {
     );
   }
 
-  // ─── Share Button ───
-  Widget _shareButton(Map<String, dynamic> winner) {
+  Widget _actionButton({
+    required IconData icon,
+    required String label,
+    required Color color,
+    required VoidCallback? onTap,
+  }) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF1A73E8).withValues(alpha: 0.15),
+        color: color.withValues(alpha: 0.15),
         borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: const Color(0xFF1A73E8), width: 1),
+        border: Border.all(color: color, width: 1),
       ),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => _shareWinner(winner),
+          onTap: onTap,
           borderRadius: BorderRadius.circular(8),
-          child: const Padding(
-            padding: EdgeInsets.symmetric(horizontal: 18, vertical: 10),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.share, color: Color(0xFF1A73E8), size: 16),
-                SizedBox(width: 6),
+                Icon(icon, color: color, size: 16),
+                const SizedBox(width: 6),
                 Text(
-                  "Share",
+                  label,
                   style: TextStyle(
-                    color: Color(0xFF1A73E8),
+                    color: color,
                     fontSize: 13,
                     fontWeight: FontWeight.bold,
                   ),
@@ -302,15 +368,89 @@ class _WinnerScreenState extends State<WinnerScreen> {
     );
   }
 
-  // ─── Share Winner ───
-  Future<void> _shareWinner(Map<String, dynamic> winner) async {
-    try {
-      final text = "${winner['name']} is ${_rankText(winner['rank'])} "
-          "in ${widget.tournamentName}! 🏆\n"
-          "${winner['points']} points\n"
-          "#CricMania #ProLeague";
+  Future<void> _downloadCard(int rank, Map<String, dynamic> winner) async {
+    setState(() => _downloadingRank = rank);
 
-      await Share.share(text);
+    try {
+      // Permissions
+      if (Platform.isAndroid) {
+        PermissionStatus status;
+        if (await Permission.photos.isGranted ||
+            await Permission.storage.isGranted) {
+          status = PermissionStatus.granted;
+        } else {
+          final photos = await Permission.photos.request();
+          if (photos.isGranted) {
+            status = photos;
+          } else {
+            status = await Permission.storage.request();
+          }
+        }
+
+        if (!status.isGranted) {
+          _snack("Gallery permission required", isError: true);
+          if (mounted) setState(() => _downloadingRank = null);
+          return;
+        }
+      }
+
+      // Capture image
+      final bytes = await _captureCard(rank);
+
+      if (bytes == null) {
+        _snack("Failed to capture card", isError: true);
+        if (mounted) setState(() => _downloadingRank = null);
+        return;
+      }
+
+      final cleanName = (winner['name'] as String)
+          .replaceAll(RegExp(r'[^\w\s]'), '')
+          .replaceAll(' ', '_');
+      final fileName = "Winner_${rank}_$cleanName";
+
+      if (Platform.isAndroid || Platform.isIOS) {
+        final result = await ImageGallerySaverPlus.saveImage(
+          bytes,
+          quality: 100,
+          name: fileName,
+        );
+        if (result != null) {
+          _snack("Card saved to gallery!");
+        } else {
+          _snack("Failed to save", isError: true);
+        }
+      }
+    } catch (e) {
+      _snack("Error: $e", isError: true);
+    } finally {
+      if (mounted) setState(() => _downloadingRank = null);
+    }
+  }
+
+  Future<void> _shareWinner(int rank, Map<String, dynamic> winner) async {
+    try {
+      final bytes = await _captureCard(rank);
+
+      if (bytes == null) {
+        _snack("Failed to capture", isError: true);
+        return;
+      }
+
+      final dir = await getTemporaryDirectory();
+      final cleanName = (winner['name'] as String)
+          .replaceAll(RegExp(r'[^\w\s]'), '')
+          .replaceAll(' ', '_');
+      final fileName = "Winner_${rank}_$cleanName.png";
+      final file = File('${dir.path}/$fileName');
+      await file.writeAsBytes(bytes);
+
+      await Share.shareXFiles(
+        [XFile(file.path)],
+        text: "${winner['name']} is ${_rankText(rank)} "
+            "in ${widget.tournamentName}! 🏆\n"
+            "${winner['points']} points\n"
+            "#CricMania #ProLeague",
+      );
     } catch (e) {
       _snack("Error: $e", isError: true);
     }
@@ -344,10 +484,7 @@ class _WinnerScreenState extends State<WinnerScreen> {
             Text(
               "Winners will be announced after the tournament ends.",
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[500], fontSize: 14),
             ),
           ],
         ),

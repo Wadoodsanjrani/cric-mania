@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'entry/entry_form_screen.dart';
+import 'squad/squad_teams_screen.dart';
 
 /// Tournament List Screen — Active tournaments from admin
 class TournamentListScreen extends StatefulWidget {
@@ -182,6 +183,9 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
     );
   }
 
+  // ═══════════════════════════════════════════════════════════
+  // SMART JOIN — Profile Check + Navigation
+  // ═══════════════════════════════════════════════════════════
   Future<void> _onJoinTap(String tournamentId, String tournamentName) async {
     final user = _auth.currentUser;
 
@@ -195,6 +199,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
       return;
     }
 
+    // Show loading
     showDialog(
       context: context,
       barrierDismissible: false,
@@ -204,6 +209,7 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
     );
 
     try {
+      // 1. Check if already joined (squad exists)
       final squadDoc = await _firestore
           .collection('tournaments')
           .doc(tournamentId)
@@ -211,28 +217,88 @@ class _TournamentListScreenState extends State<TournamentListScreen> {
           .doc(user.uid)
           .get();
 
-      if (!mounted) return;
-      Navigator.pop(context);
+      // 2. Check if user profile is already saved
+      final profileDoc = await _firestore
+          .collection('users')
+          .doc(user.uid)
+          .get();
 
+      if (!mounted) return;
+      Navigator.pop(context); // Close loading
+
+      // 3. Already joined?
       if (squadDoc.exists) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You have already joined this tournament'),
-            backgroundColor: Color(0xFF00C9A7),
-          ),
-        );
+        final squadData = squadDoc.data() ?? {};
+        final isLocked = squadData['locked'] == true;
+
+        if (isLocked) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Squad already submitted for this tournament 🔒'),
+              backgroundColor: Color(0xFF00C9A7),
+            ),
+          );
+        } else {
+          // Draft — continue to squad selection
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Continuing your squad selection...'),
+              backgroundColor: Color(0xFF1A73E8),
+            ),
+          );
+
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (_) => SquadTeamsScreen(
+                tournamentId: tournamentId,
+                tournamentName: tournamentName,
+              ),
+            ),
+          );
+        }
         return;
       }
 
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (_) => EntryFormScreen(
-            tournamentId: tournamentId,
-            tournamentName: tournamentName,
+      // 4. Check profile saved?
+      bool hasProfile = false;
+      if (profileDoc.exists) {
+        final profileData = profileDoc.data()!;
+        final name = (profileData['name'] ?? '').toString().trim();
+        final phone = (profileData['phone'] ?? '').toString().trim();
+        final city = (profileData['city'] ?? '').toString().trim();
+        final address = (profileData['address'] ?? '').toString().trim();
+
+        hasProfile = name.isNotEmpty &&
+            phone.isNotEmpty &&
+            city.isNotEmpty &&
+            address.isNotEmpty;
+      }
+
+      // 5. Navigate
+      if (hasProfile) {
+        // Profile already saved → Direct Squad Selection
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => SquadTeamsScreen(
+              tournamentId: tournamentId,
+              tournamentName: tournamentName,
+            ),
           ),
-        ),
-      );
+        );
+      } else {
+        // No profile → Entry Form
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => EntryFormScreen(
+              tournamentId: tournamentId,
+              tournamentName: tournamentName,
+            ),
+          ),
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       Navigator.pop(context);

@@ -5,7 +5,7 @@ import '../../models/squad_model.dart';
 import '../../services/squad_service.dart';
 import 'team_squad_screen.dart';
 
-/// Squad Teams Screen — Screen 1 (Teams list)
+/// Squad Teams Screen — Teams list with completion status
 class SquadTeamsScreen extends StatefulWidget {
   final String tournamentId;
   final String tournamentName;
@@ -120,10 +120,10 @@ class _SquadTeamsScreenState extends State<SquadTeamsScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        gradient: LinearGradient(
+        gradient: const LinearGradient(
           colors: [
-            const Color(0xFF1A73E8),
-            const Color(0xFF0D47A1),
+            Color(0xFF1A73E8),
+            Color(0xFF0D47A1),
           ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,

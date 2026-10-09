@@ -1,3 +1,5 @@
+import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -19,13 +21,108 @@ class LeaderboardScreen extends StatefulWidget {
 class _LeaderboardScreenState extends State<LeaderboardScreen> {
   final _searchController = TextEditingController();
   final _userId = FirebaseAuth.instance.currentUser?.uid ?? '';
+  final _firestore = FirebaseFirestore.instance;
 
   String _searchQuery = '';
+  bool _loading = true;
+  String? _error;
+  List<Map<String, dynamic>> _allEntries = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadLeaderboard();
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
     super.dispose();
+  }
+
+  // ─── Load leaderboard + merge user info ───
+  Future<void> _loadLeaderboard() async {
+    try {
+      final lbSnap = await _firestore
+          .collection('tournaments')
+          .doc(widget.tournamentId)
+          .collection('leaderboard')
+          .get();
+
+      final entries = lbSnap.docs;
+
+      if (entries.isEmpty) {
+        if (!mounted) return;
+        setState(() {
+          _allEntries = [];
+          _loading = false;
+        });
+        return;
+      }
+
+      // Fetch user profiles in parallel
+      final userFutures = entries.map((doc) async {
+        try {
+          final userDoc =
+              await _firestore.collection('users').doc(doc.id).get();
+          return userDoc.exists ? (userDoc.data() ?? {}) : <String, dynamic>{};
+        } catch (e) {
+          return <String, dynamic>{};
+        }
+      }).toList();
+
+      final userProfiles = await Future.wait(userFutures);
+
+      // Merge leaderboard + user profile
+      final List<Map<String, dynamic>> merged = [];
+      for (int i = 0; i < entries.length; i++) {
+        final lbData = entries[i].data();
+        final userData = userProfiles[i];
+        final userId = entries[i].id;
+
+        final lbName = (lbData['userName'] ?? '').toString();
+        final lbCity = (lbData['userCity'] ?? '').toString();
+
+        merged.add({
+          'userId': userId,
+          'rank': (lbData['rank'] as num?)?.toInt() ?? 0,
+          'totalPoints': (lbData['totalPoints'] as num?)?.toInt() ?? 0,
+          'status': lbData['status'] ?? 'active',
+          'fpodCount': (lbData['fpodCount'] as num?)?.toInt() ?? 0,
+          'userName': lbName.isNotEmpty
+              ? lbName
+              : (userData['name'] ?? 'Player').toString(),
+          'userCity': lbCity.isNotEmpty
+              ? lbCity
+              : (userData['city'] ?? '').toString(),
+          'userPhotoBase64': (userData['profilePhotoBase64'] ?? '').toString(),
+        });
+      }
+
+      // Sort by totalPoints (descending)
+      merged.sort((a, b) {
+        final aPts = a['totalPoints'] as int;
+        final bPts = b['totalPoints'] as int;
+        return bPts.compareTo(aPts);
+      });
+
+      // Recalculate ranks
+      for (int i = 0; i < merged.length; i++) {
+        merged[i]['rank'] = i + 1;
+      }
+
+      if (!mounted) return;
+      setState(() {
+        _allEntries = merged;
+        _loading = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Failed to load leaderboard: $e';
+        _loading = false;
+      });
+    }
   }
 
   @override
@@ -55,74 +152,56 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
           ],
         ),
         iconTheme: const IconThemeData(color: Colors.white),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.white),
+            onPressed: () {
+              setState(() {
+                _loading = true;
+                _error = null;
+              });
+              _loadLeaderboard();
+            },
+          ),
+        ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-            .collection('tournaments')
-            .doc(widget.tournamentId)
-            .collection('leaderboard')
-            .orderBy('totalPoints', descending: true)
-            .snapshots(),
-        builder: (context, snapshot) {
-          if (snapshot.hasError) {
-            return _errorView("Failed to load leaderboard");
-          }
-
-          if (!snapshot.hasData) {
-            return const Center(
+      body: _loading
+          ? const Center(
               child: CircularProgressIndicator(color: Color(0xFF00C9A7)),
-            );
-          }
-
-          final allEntries = snapshot.data!.docs;
-
-          if (allEntries.isEmpty) {
-            return _emptyView();
-          }
-
-          // Find current user's entry
-          final hasMyEntry = allEntries.any((doc) => doc.id == _userId);
-          DocumentSnapshot? myEntry;
-          if (hasMyEntry) {
-            myEntry = allEntries.firstWhere((doc) => doc.id == _userId);
-          }
-
-          // Filter entries
-          var filtered = allEntries.where((doc) {
-            final data = doc.data() as Map<String, dynamic>;
-            final name = (data['userName'] ?? '').toString().toLowerCase();
-            final city = (data['userCity'] ?? '').toString().toLowerCase();
-
-            if (_searchQuery.isNotEmpty) {
-              return name.contains(_searchQuery) ||
-                  city.contains(_searchQuery);
-            }
-            return true;
-          }).toList();
-
-          return Column(
-            children: [
-              // ─── SEARCH BAR ───
-              _searchBar(),
-
-              // ─── MY RANK CARD ───
-              if (hasMyEntry && myEntry != null && _searchQuery.isEmpty)
-                _myRankCard(myEntry),
-
-              // ─── LEADERBOARD LIST ───
-              Expanded(
-                child: filtered.isEmpty
-                    ? _noResultsView()
-                    : _leaderboardList(filtered, allEntries),
-              ),
-            ],
-          );
-        },
-      ),
+            )
+          : _error != null
+              ? _errorView(_error!)
+              : _allEntries.isEmpty
+                  ? _emptyView()
+                  : _buildContent(),
     );
   }
 
-  // ─── SEARCH BAR ───
+  Widget _buildContent() {
+    final filtered = _allEntries.where((e) {
+      if (_searchQuery.isEmpty) return true;
+      final name = (e['userName'] ?? '').toString().toLowerCase();
+      final city = (e['userCity'] ?? '').toString().toLowerCase();
+      return name.contains(_searchQuery) || city.contains(_searchQuery);
+    }).toList();
+
+    final myEntry = _allEntries.firstWhere(
+      (e) => e['userId'] == _userId,
+      orElse: () => <String, dynamic>{},
+    );
+    final hasMyEntry = myEntry.isNotEmpty;
+
+    return Column(
+      children: [
+        _searchBar(),
+        if (hasMyEntry && _searchQuery.isEmpty) _myRankCard(myEntry),
+        Expanded(
+          child: filtered.isEmpty ? _noResultsView() : _listView(filtered),
+        ),
+      ],
+    );
+  }
+
   Widget _searchBar() {
     return Container(
       padding: const EdgeInsets.all(12),
@@ -175,12 +254,10 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     );
   }
 
-  // ─── MY RANK CARD ───
-  Widget _myRankCard(DocumentSnapshot myEntry) {
-    final data = myEntry.data() as Map<String, dynamic>;
-    final rank = data['rank'] ?? 0;
-    final points = data['totalPoints'] ?? 0;
-    final status = data['status'] ?? 'active';
+  Widget _myRankCard(Map<String, dynamic> myEntry) {
+    final rank = myEntry['rank'] ?? 0;
+    final points = myEntry['totalPoints'] ?? 0;
+    final status = myEntry['status'] ?? 'active';
     final isEliminated = status == 'eliminated';
 
     return Container(
@@ -271,30 +348,26 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     );
   }
 
-  // ─── LEADERBOARD LIST ───
-  Widget _leaderboardList(
-    List<QueryDocumentSnapshot> filtered,
-    List<QueryDocumentSnapshot> allEntries,
-  ) {
+  Widget _listView(List<Map<String, dynamic>> filtered) {
     return ListView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 12),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       itemCount: filtered.length,
       itemBuilder: (context, index) {
-        final entry = filtered[index];
-        final realRank = allEntries.indexWhere((e) => e.id == entry.id) + 1;
-        return _leaderboardRow(entry, realRank);
+        return _leaderboardRow(filtered[index]);
       },
     );
   }
 
-  Widget _leaderboardRow(DocumentSnapshot entry, int rank) {
-    final data = entry.data() as Map<String, dynamic>;
-    final name = data['userName'] ?? 'Player';
-    final city = data['userCity'] ?? '';
-    final points = data['totalPoints'] ?? 0;
-    final status = data['status'] ?? 'active';
+  Widget _leaderboardRow(Map<String, dynamic> entry) {
+    final userId = entry['userId'] ?? '';
+    final name = entry['userName'] ?? 'Player';
+    final city = entry['userCity'] ?? '';
+    final points = entry['totalPoints'] ?? 0;
+    final status = entry['status'] ?? 'active';
+    final rank = (entry['rank'] as num?)?.toInt() ?? 0;
+    final photoBase64 = entry['userPhotoBase64'] ?? '';
     final isEliminated = status == 'eliminated';
-    final isMe = entry.id == _userId;
+    final isMe = userId == _userId;
 
     Color rankColor = Colors.grey;
     IconData? rankIcon;
@@ -311,15 +384,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
-      padding: const EdgeInsets.all(12),
+      padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
         color: isMe
             ? const Color(0xFF1A73E8).withValues(alpha: 0.15)
             : const Color(0xFF2D2D44),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(
-          color:
-              isMe ? const Color(0xFF00C9A7) : const Color(0xFF3D3D5C),
+          color: isMe ? const Color(0xFF00C9A7) : const Color(0xFF3D3D5C),
           width: isMe ? 1.5 : 1,
         ),
       ),
@@ -347,7 +419,31 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                     ),
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 10),
+          if (photoBase64.isNotEmpty)
+            Container(
+              width: 36,
+              height: 36,
+              margin: const EdgeInsets.only(right: 10),
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: isMe ? const Color(0xFF00C9A7) : Colors.white24,
+                  width: 1.5,
+                ),
+              ),
+              child: ClipOval(
+                child: Image.memory(
+                  _safeBase64Decode(photoBase64),
+                  fit: BoxFit.cover,
+                  errorBuilder: (c, e, s) => const Icon(
+                    Icons.person,
+                    color: Colors.white54,
+                    size: 18,
+                  ),
+                ),
+              ),
+            ),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -397,14 +493,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
                       const Icon(
                         Icons.location_on,
                         color: Color(0xFF9E9E9E),
-                        size: 12,
+                        size: 11,
                       ),
                       const SizedBox(width: 3),
                       Text(
                         city,
                         style: const TextStyle(
                           color: Color(0xFF9E9E9E),
-                          fontSize: 12,
+                          fontSize: 11,
                         ),
                       ),
                     ],
@@ -435,6 +531,18 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     );
   }
 
+  Uint8List _safeBase64Decode(String base64String) {
+    try {
+      String cleaned = base64String;
+      if (cleaned.contains(',')) {
+        cleaned = cleaned.split(',').last;
+      }
+      return base64Decode(cleaned);
+    } catch (e) {
+      return Uint8List(0);
+    }
+  }
+
   Widget _emptyView() {
     return Center(
       child: Padding(
@@ -457,10 +565,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             Text(
               "Leaderboard will appear once matches start.",
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 14,
-              ),
+              style: TextStyle(color: Colors.grey[500], fontSize: 14),
             ),
           ],
         ),
@@ -489,10 +594,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             Text(
               "No players found matching \"$_searchQuery\"",
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey[500],
-                fontSize: 13,
-              ),
+              style: TextStyle(color: Colors.grey[500], fontSize: 13),
             ),
           ],
         ),

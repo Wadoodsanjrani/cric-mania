@@ -5,6 +5,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../models/user_profile_model.dart';
 import '../../services/image_helper.dart';
+import '../squad/squad_teams_screen.dart';
 
 /// Entry Form Screen — User profile details
 class EntryFormScreen extends StatefulWidget {
@@ -40,6 +41,39 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
     'Azad Jammu & Kashmir',
     'Islamabad',
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadExistingProfile();
+  }
+
+  Future<void> _loadExistingProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    try {
+      final doc = await FirebaseFirestore.instance
+          .collection('users')
+          .doc(user.uid)
+          .get();
+
+      if (doc.exists && mounted) {
+        final profile = UserProfileModel.fromMap(user.uid, doc.data()!);
+        setState(() {
+          _nameCtrl.text = profile.name;
+          _phoneCtrl.text = profile.phone;
+          _cityCtrl.text = profile.city;
+          _addressCtrl.text = profile.address;
+          if (_provinces.contains(profile.province)) {
+            _selectedProvince = profile.province;
+          }
+        });
+      }
+    } catch (e) {
+      // Silent fail
+    }
+  }
 
   @override
   void dispose() {
@@ -132,10 +166,22 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
           .set(profile.toMap(), SetOptions(merge: true));
 
       if (!mounted) return;
-      _snack('Profile saved!');
-      Navigator.pop(context);
+
+      _snack('Profile saved! Now select your squad.');
+
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(
+          builder: (_) => SquadTeamsScreen(
+            tournamentId: widget.tournamentId,
+            tournamentName: widget.tournamentName,
+          ),
+        ),
+      );
     } catch (e) {
-      _snack('Error: $e', isError: true);
+      if (mounted) {
+        _snack('Error: $e', isError: true);
+      }
     } finally {
       if (mounted) setState(() => _saving = false);
     }
@@ -183,7 +229,6 @@ class _EntryFormScreenState extends State<EntryFormScreen> {
             ),
             const SizedBox(height: 24),
 
-            // PHOTO
             Center(
               child: GestureDetector(
                 onTap: _pickImage,

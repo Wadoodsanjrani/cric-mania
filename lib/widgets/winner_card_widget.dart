@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 
 class WinnerCardWidget extends StatelessWidget {
@@ -6,7 +7,7 @@ class WinnerCardWidget extends StatelessWidget {
   final String userCity;
   final String photoBase64;
   final int points;
-  final int rank; // 1, 2, 3
+  final int rank;
   final String tournamentName;
   final String sponsorName;
   final String sponsorLogoBase64;
@@ -23,7 +24,19 @@ class WinnerCardWidget extends StatelessWidget {
     this.sponsorLogoBase64 = '',
   });
 
-  // ─── Rank Config ───
+  // ✅ SAFE base64 decode — prefix aur invalid dono handle
+  Uint8List? _safeDecode(String b64) {
+    if (b64.isEmpty) return null;
+    try {
+      String clean = b64;
+      if (clean.contains(',')) clean = clean.split(',').last;
+      clean = clean.replaceAll(RegExp(r'\s+'), '');
+      return base64Decode(clean);
+    } catch (e) {
+      return null;
+    }
+  }
+
   Map<String, dynamic> get _rankConfig {
     switch (rank) {
       case 1:
@@ -69,6 +82,8 @@ class WinnerCardWidget extends StatelessWidget {
   Widget build(BuildContext context) {
     final config = _rankConfig;
     final accent = config['accent'] as Color;
+    final photoBytes = _safeDecode(photoBase64);
+    final sponsorBytes = _safeDecode(sponsorLogoBase64);
 
     return Container(
       width: 340,
@@ -96,12 +111,12 @@ class WinnerCardWidget extends StatelessWidget {
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
-          // ─── TOP BANNER ───
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: config['gradient'] as List<Color>),
+              gradient: LinearGradient(
+                  colors: config['gradient'] as List<Color>),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -125,7 +140,6 @@ class WinnerCardWidget extends StatelessWidget {
           ),
           const SizedBox(height: 18),
 
-          // ─── PHOTO ───
           Container(
             width: 110,
             height: 110,
@@ -141,9 +155,9 @@ class WinnerCardWidget extends StatelessWidget {
               ],
             ),
             child: ClipOval(
-              child: photoBase64.isNotEmpty
+              child: photoBytes != null
                   ? Image.memory(
-                      base64Decode(photoBase64),
+                      photoBytes,
                       fit: BoxFit.cover,
                       errorBuilder: (c, e, s) => _defaultAvatar(accent),
                     )
@@ -152,7 +166,6 @@ class WinnerCardWidget extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // ─── NAME ───
           Text(
             userName,
             textAlign: TextAlign.center,
@@ -166,7 +179,6 @@ class WinnerCardWidget extends StatelessWidget {
             maxLines: 2,
           ),
 
-          // ─── CITY ───
           if (userCity.isNotEmpty) ...[
             const SizedBox(height: 6),
             Row(
@@ -186,12 +198,12 @@ class WinnerCardWidget extends StatelessWidget {
           ],
           const SizedBox(height: 16),
 
-          // ─── POINTS ───
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(vertical: 14),
             decoration: BoxDecoration(
-              gradient: LinearGradient(colors: config['gradient'] as List<Color>),
+              gradient: LinearGradient(
+                  colors: config['gradient'] as List<Color>),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Column(
@@ -226,7 +238,6 @@ class WinnerCardWidget extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // ─── TOURNAMENT NAME ───
           Text(
             tournamentName,
             style: TextStyle(
@@ -238,7 +249,6 @@ class WinnerCardWidget extends StatelessWidget {
             textAlign: TextAlign.center,
           ),
 
-          // ─── SPONSOR ───
           if (sponsorName.isNotEmpty) ...[
             const SizedBox(height: 14),
             Container(
@@ -252,7 +262,7 @@ class WinnerCardWidget extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  if (sponsorLogoBase64.isNotEmpty)
+                  if (sponsorBytes != null)
                     Container(
                       width: 22,
                       height: 22,
@@ -260,7 +270,7 @@ class WinnerCardWidget extends StatelessWidget {
                       child: ClipRRect(
                         borderRadius: BorderRadius.circular(4),
                         child: Image.memory(
-                          base64Decode(sponsorLogoBase64),
+                          sponsorBytes,
                           fit: BoxFit.cover,
                           errorBuilder: (c, e, s) => const SizedBox(),
                         ),
@@ -285,7 +295,6 @@ class WinnerCardWidget extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // ─── FOOTER ───
           Text(
             "CRIC MANIA PRO LEAGUE",
             style: TextStyle(
