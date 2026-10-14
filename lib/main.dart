@@ -92,7 +92,7 @@ class _MainTabsState extends State<MainTabs> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// LIVE SCORE TAB — BILKUL SAME (KOI CHANGE NAHI)
+// LIVE SCORE TAB — SAME
 // ═══════════════════════════════════════════════════════════════
 
 class LiveScoreTab extends StatefulWidget {
@@ -533,13 +533,45 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                         ),
                       ),
                     ),
+                    // ✅ NAYA: Squad Tab
+                    Expanded(
+                      child: GestureDetector(
+                        onTap: () => setState(() => _detailTab = 2),
+                        child: Container(
+                          padding: EdgeInsets.symmetric(vertical: 12),
+                          decoration: BoxDecoration(
+                            border: Border(
+                              bottom: BorderSide(
+                                color: _detailTab == 2
+                                    ? AppColors.accent
+                                    : Colors.transparent,
+                                width: 3,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            "Squad",
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: _detailTab == 2
+                                  ? AppColors.accent
+                                  : AppColors.textGrey,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 14,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
                   ],
                 ),
               ),
               Expanded(
                 child: _detailTab == 0
                     ? _buildScorecardTab(m)
-                    : _buildPlayingXITab(m),
+                    : _detailTab == 1
+                        ? _buildPlayingXITab(m)
+                        : _buildSquadTab(m),
               ),
             ],
           ),
@@ -713,6 +745,44 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
             ],
           ),
         ],
+        SizedBox(height: 20),
+      ],
+    );
+  }
+
+  // ✅ NAYA: Squad Tab (Style A — side by side)
+  Widget _buildSquadTab(Map<String, dynamic> m) {
+    String team1 = m['team1'] ?? 'Team 1';
+    String team2 = m['team2'] ?? 'Team 2';
+
+    List<dynamic> team1Squad =
+        (m['team1Squad'] as List<dynamic>?) ?? <dynamic>[];
+    List<dynamic> team2Squad =
+        (m['team2Squad'] as List<dynamic>?) ?? <dynamic>[];
+
+    bool hasAny = team1Squad.isNotEmpty || team2Squad.isNotEmpty;
+
+    if (!hasAny) {
+      return Center(
+        child: Text(
+          "No Squad Available",
+          style: TextStyle(color: AppColors.textGrey, fontSize: 15),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: EdgeInsets.all(10),
+      children: [
+        _tabHeader("👥 SQUAD"),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(child: _teamList(team1, team1Squad)),
+            SizedBox(width: 8),
+            Expanded(child: _teamList(team2, team2Squad)),
+          ],
+        ),
         SizedBox(height: 20),
       ],
     );
@@ -1207,7 +1277,7 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
 }
 
 // ═══════════════════════════════════════════════════════════════
-// NEWS TAB — BILKUL SAME (KOI CHANGE NAHI)
+// NEWS TAB — SAME (NO CHANGE)
 // ═══════════════════════════════════════════════════════════════
 
 class NewsTab extends StatefulWidget {

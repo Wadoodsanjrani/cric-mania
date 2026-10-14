@@ -3,6 +3,8 @@ import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import '../../services/image_helper.dart';
+import '../../services/sponsor_service.dart';
 
 class LeaderboardScreen extends StatefulWidget {
   final String tournamentId;
@@ -22,11 +24,17 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
   final _searchController = TextEditingController();
   final _userId = FirebaseAuth.instance.currentUser?.uid ?? '';
   final _firestore = FirebaseFirestore.instance;
+  final _sponsorService = SponsorService();
 
   String _searchQuery = '';
   bool _loading = true;
   String? _error;
   List<Map<String, dynamic>> _allEntries = [];
+
+  // Filter state
+  String _selectedFilter = 'overall';
+  String? _latestMatchId;
+  String _latestMatchNumber = '';
 
   @override
   void initState() {
@@ -40,9 +48,30 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     super.dispose();
   }
 
-  // ─── Load leaderboard + merge user info ───
+  // ─── Load leaderboard + latest match ───
   Future<void> _loadLeaderboard() async {
     try {
+      // Fetch latest match (sorted by timestamp)
+      try {
+        final matchSnap = await _firestore
+            .collection('tournaments')
+            .doc(widget.tournamentId)
+            .collection('matches')
+            .orderBy('timestamp', descending: true)
+            .limit(1)
+            .get();
+
+        if (matchSnap.docs.isNotEmpty) {
+          final matchData =
+              matchSnap.docs.first.data() as Map<String, dynamic>;
+          _latestMatchId = matchSnap.docs.first.id;
+          _latestMatchNumber = (matchData['matchNumber'] ?? '').toString();
+        }
+      } catch (e) {
+        // Silently ignore
+      }
+
+      // Load leaderboard
       final lbSnap = await _firestore
           .collection('tournaments')
           .doc(widget.tournamentId)
@@ -83,10 +112,14 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         final lbName = (lbData['userName'] ?? '').toString();
         final lbCity = (lbData['userCity'] ?? '').toString();
 
+        final Map<String, dynamic> matchPoints =
+            Map<String, dynamic>.from(lbData['matchPoints'] ?? {});
+
         merged.add({
           'userId': userId,
           'rank': (lbData['rank'] as num?)?.toInt() ?? 0,
           'totalPoints': (lbData['totalPoints'] as num?)?.toInt() ?? 0,
+          'matchPoints': matchPoints,
           'status': lbData['status'] ?? 'active',
           'fpodCount': (lbData['fpodCount'] as num?)?.toInt() ?? 0,
           'userName': lbName.isNotEmpty
@@ -97,18 +130,6 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
               : (userData['city'] ?? '').toString(),
           'userPhotoBase64': (userData['profilePhotoBase64'] ?? '').toString(),
         });
-      }
-
-      // Sort by totalPoints (descending)
-      merged.sort((a, b) {
-        final aPts = a['totalPoints'] as int;
-        final bPts = b['totalPoints'] as int;
-        return bPts.compareTo(aPts);
-      });
-
-      // Recalculate ranks
-      for (int i = 0; i < merged.length; i++) {
-        merged[i]['rank'] = i + 1;
       }
 
       if (!mounted) return;
@@ -123,6 +144,40 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
         _loading = false;
       });
     }
+  }
+
+  // Filtered + sorted list
+  List<Map<String, dynamic>> _getFilteredEntries() {
+    List<Map<String, dynamic>> working = _allEntries.map((e) {
+      final copy = Map<String, dynamic>.from(e);
+      if (_selectedFilter == 'latest' && _latestMatchId != null) {
+        final mp = Map<String, dynamic>.from(copy['matchPoints'] ?? {});
+        copy['displayPoints'] = (mp[_latestMatchId] as num?)?.toInt() ?? 0;
+      } else {
+        copy['displayPoints'] = (copy['totalPoints'] as num?)?.toInt() ?? 0;
+      }
+      return copy;
+    }).toList();
+
+    if (_selectedFilter == 'latest' && _latestMatchId != null) {
+      working = working.where((e) => (e['displayPoints'] as int) > 0).toList();
+    }
+
+    working.sort((a, b) {
+      final aPts = a['displayPoints'] as int;
+      final bPts = b['displayPoints'] as int;
+      final ptsCompare = bPts.compareTo(aPts);
+      if (ptsCompare != 0) return ptsCompare;
+      final aName = (a['userName'] ?? '').toString().toLowerCase();
+      final bName = (b['userName'] ?? '').toString().toLowerCase();
+      return aName.compareTo(bName);
+    });
+
+    for (int i = 0; i < working.length; i++) {
+      working[i]['rank'] = i + 1;
+    }
+
+    return working;
   }
 
   @override
@@ -171,21 +226,33 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
             )
           : _error != null
               ? _errorView(_error!)
-              : _allEntries.isEmpty
-                  ? _emptyView()
-                  : _buildContent(),
+              : _buildContent(),
     );
   }
 
   Widget _buildContent() {
-    final filtered = _allEntries.where((e) {
+    // Agar leaderboard empty hai — sponsor + empty view dikhao
+    if (_allEntries.isEmpty) {
+      return SingleChildScrollView(
+        child: Column(
+          children: [
+            _sponsorSection(),
+            const SizedBox(height: 60),
+            _emptyView(),
+          ],
+        ),
+      );
+    }
+
+    final filteredEntries = _getFilteredEntries();
+    final filtered = filteredEntries.where((e) {
       if (_searchQuery.isEmpty) return true;
       final name = (e['userName'] ?? '').toString().toLowerCase();
       final city = (e['userCity'] ?? '').toString().toLowerCase();
       return name.contains(_searchQuery) || city.contains(_searchQuery);
     }).toList();
 
-    final myEntry = _allEntries.firstWhere(
+    final myEntry = filteredEntries.firstWhere(
       (e) => e['userId'] == _userId,
       orElse: () => <String, dynamic>{},
     );
@@ -193,12 +260,182 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
     return Column(
       children: [
+        _sponsorSection(),
+        _chipRow(),
         _searchBar(),
         if (hasMyEntry && _searchQuery.isEmpty) _myRankCard(myEntry),
         Expanded(
           child: filtered.isEmpty ? _noResultsView() : _listView(filtered),
         ),
       ],
+    );
+  }
+
+  // ✅ NAYA: Sponsor section
+  Widget _sponsorSection() {
+    return StreamBuilder<SponsorConfig>(
+      stream: _sponsorService.streamConfig(widget.tournamentId),
+      builder: (context, snapshot) {
+        final config = snapshot.data ?? SponsorConfig();
+
+        if (!config.hasBanner && !config.hasAnySlot) {
+          return const SizedBox.shrink();
+        }
+
+        return Container(
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 6),
+          color: const Color(0xFF2D2D44),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Main banner
+              if (config.hasBanner) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(10),
+                  child: Image.memory(
+                    ImageHelper.base64ToBytes(config.bannerBase64),
+                    width: double.infinity,
+                    height: 100,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, __, ___) => const SizedBox.shrink(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              // 3 slots
+              if (config.hasAnySlot)
+                Row(
+                  children: [
+                    if (config.hasSlot1)
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.memory(
+                            ImageHelper.base64ToBytes(config.slot1Base64),
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                    if (config.hasSlot1 && (config.hasSlot2 || config.hasSlot3))
+                      const SizedBox(width: 6),
+                    if (config.hasSlot2)
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.memory(
+                            ImageHelper.base64ToBytes(config.slot2Base64),
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                    if (config.hasSlot2 && config.hasSlot3)
+                      const SizedBox(width: 6),
+                    if (config.hasSlot3)
+                      Expanded(
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(8),
+                          child: Image.memory(
+                            ImageHelper.base64ToBytes(config.slot3Base64),
+                            height: 50,
+                            fit: BoxFit.cover,
+                            errorBuilder: (_, __, ___) =>
+                                const SizedBox.shrink(),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // Filter chips
+  Widget _chipRow() {
+    final hasLatest =
+        _latestMatchId != null && _latestMatchNumber.isNotEmpty;
+
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 0),
+      color: const Color(0xFF2D2D44),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            if (hasLatest) ...[
+              _filterChip(
+                label: 'Latest: Match $_latestMatchNumber',
+                value: 'latest',
+              ),
+              const SizedBox(width: 8),
+            ],
+            _filterChip(
+              label: 'Overall',
+              value: 'overall',
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _filterChip({required String label, required String value}) {
+    final isSelected = _selectedFilter == value;
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _selectedFilter = value;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected
+              ? const Color(0xFF00C9A7)
+              : const Color(0xFF1B1B2F),
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected
+                ? const Color(0xFF00C9A7)
+                : const Color(0xFF3D3D5C),
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          children: [
+            Icon(
+              isSelected
+                  ? Icons.check_circle
+                  : (value == 'latest'
+                      ? Icons.sports_cricket
+                      : Icons.leaderboard),
+              color: isSelected
+                  ? const Color(0xFF1B1B2F)
+                  : const Color(0xFF9E9E9E),
+              size: 16,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected
+                    ? const Color(0xFF1B1B2F)
+                    : const Color(0xFFEAEAEA),
+                fontWeight: FontWeight.bold,
+                fontSize: 13,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -256,7 +493,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
 
   Widget _myRankCard(Map<String, dynamic> myEntry) {
     final rank = myEntry['rank'] ?? 0;
-    final points = myEntry['totalPoints'] ?? 0;
+    final points = myEntry['displayPoints'] ?? myEntry['totalPoints'] ?? 0;
     final status = myEntry['status'] ?? 'active';
     final isEliminated = status == 'eliminated';
 
@@ -362,7 +599,7 @@ class _LeaderboardScreenState extends State<LeaderboardScreen> {
     final userId = entry['userId'] ?? '';
     final name = entry['userName'] ?? 'Player';
     final city = entry['userCity'] ?? '';
-    final points = entry['totalPoints'] ?? 0;
+    final points = entry['displayPoints'] ?? entry['totalPoints'] ?? 0;
     final status = entry['status'] ?? 'active';
     final rank = (entry['rank'] as num?)?.toInt() ?? 0;
     final photoBase64 = entry['userPhotoBase64'] ?? '';

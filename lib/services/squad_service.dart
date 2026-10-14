@@ -140,5 +140,27 @@ class SquadService {
       },
       SetOptions(merge: true),
     );
+
+    // ✅ NAYA: Leaderboard entry banao (0 points ke saath)
+    // Taake user join karte hi leaderboard mein nazar aaye
+    await _firestore
+        .collection('tournaments')
+        .doc(tournamentId)
+        .collection('leaderboard')
+        .doc(userId)
+        .set({
+      'userId': userId,
+      'userName': userName,
+      'totalPoints': 0,
+      'matchPoints': <String, dynamic>{},
+      'rank': 0,
+      'previousRank': 0,
+      'fpodCount': 0,
+      'status': 'active',
+      'eliminatedAt': null,
+      'eliminatedAfterMatchId': null,
+      'joinedAt': Timestamp.fromDate(DateTime.now()),
+      'lastUpdatedAt': Timestamp.fromDate(DateTime.now()),
+    }, SetOptions(merge: true));
   }
 }
