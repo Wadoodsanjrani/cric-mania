@@ -5,7 +5,6 @@ import '../../models/squad_model.dart';
 import '../../services/squad_service.dart';
 import 'team_squad_screen.dart';
 
-/// Squad Teams Screen — Teams list with completion status
 class SquadTeamsScreen extends StatefulWidget {
   final String tournamentId;
   final String tournamentName;
@@ -27,7 +26,26 @@ class _SquadTeamsScreenState extends State<SquadTeamsScreen> {
   bool _submitting = false;
 
   String get _userId => _auth.currentUser?.uid ?? '';
-  String get _userName => _auth.currentUser?.displayName ?? 'Player';
+
+  // ✅ NAYA: Firestore se naam fetch karo
+  Future<String> _getUserName() async {
+    try {
+      final doc = await _firestore.collection('users').doc(_userId).get();
+      if (doc.exists) {
+        final data = doc.data() ?? {};
+        final name = (data['name'] ?? data['fullName'] ?? '').toString();
+        if (name.isNotEmpty) return name;
+      }
+    } catch (e) {
+      // ignore
+    }
+    // Fallback
+    final displayName = _auth.currentUser?.displayName ?? '';
+    if (displayName.isNotEmpty) return displayName;
+    final email = _auth.currentUser?.email ?? '';
+    if (email.isNotEmpty) return email.split('@').first;
+    return 'Player';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -346,10 +364,13 @@ class _SquadTeamsScreenState extends State<SquadTeamsScreen> {
           .collection('teams')
           .get();
 
+      // ✅ NAYA: Firestore se naam fetch karo
+      final userName = await _getUserName();
+
       await _squadService.submitSquad(
         tournamentId: widget.tournamentId,
         userId: _userId,
-        userName: _userName,
+        userName: userName,
         totalTeams: teamsSnap.docs.length,
       );
 

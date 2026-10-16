@@ -4,6 +4,8 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'firebase_options.dart';
 import 'screens/pro_league/pro_league_auth_gate.dart';
+import 'screens/icc/icc_rankings_screen.dart';
+import 'screens/players_hub/players_hub_screen.dart';
 
 class AppColors {
   static const Color primary = Color(0xFF1A73E8);
@@ -51,6 +53,8 @@ class _MainTabsState extends State<MainTabs> {
   final List<Widget> _tabs = [
     LiveScoreTab(),
     NewsTab(),
+    IccRankingsScreen(),
+    PlayersHubScreen(),
     ProLeagueAuthGate(),
   ];
 
@@ -72,6 +76,8 @@ class _MainTabsState extends State<MainTabs> {
         unselectedItemColor: AppColors.textGrey,
         backgroundColor: AppColors.cardBg,
         type: BottomNavigationBarType.fixed,
+        selectedFontSize: 10,
+        unselectedFontSize: 10,
         items: [
           BottomNavigationBarItem(
             icon: Icon(Icons.sports_cricket),
@@ -80,6 +86,14 @@ class _MainTabsState extends State<MainTabs> {
           BottomNavigationBarItem(
             icon: Icon(Icons.newspaper),
             label: "News",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.leaderboard),
+            label: "ICC",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: "Players",
           ),
           BottomNavigationBarItem(
             icon: Icon(Icons.emoji_events),
@@ -533,7 +547,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
                         ),
                       ),
                     ),
-                    // ✅ NAYA: Squad Tab
                     Expanded(
                       child: GestureDetector(
                         onTap: () => setState(() => _detailTab = 2),
@@ -750,7 +763,6 @@ class _MatchDetailScreenState extends State<MatchDetailScreen> {
     );
   }
 
-  // ✅ NAYA: Squad Tab (Style A — side by side)
   Widget _buildSquadTab(Map<String, dynamic> m) {
     String team1 = m['team1'] ?? 'Team 1';
     String team2 = m['team2'] ?? 'Team 2';
